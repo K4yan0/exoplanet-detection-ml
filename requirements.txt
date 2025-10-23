@@ -1,0 +1,19 @@
+# --- Core Data Science Stack ---
+pandas
+numpy
+matplotlib
+seaborn
+
+# --- Machine Learning (Partie A) ---
+scikit-learn
+
+# --- Deep Learning (Partie B) ---
+tensorflow
+
+# --- Notebook Environment ---
+jupyter
+notebook
+
+# --- Utilities (Astro/Stats) ---
+scipy
+statsmodels
