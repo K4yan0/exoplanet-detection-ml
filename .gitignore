@@ -1,0 +1,20 @@
+# Environnement virtuel
+venv/
+.venv/
+
+# Données et Modèles
+data/
+models/
+
+# Fichiers IntelliJ / PyCharm
+.idea/
+
+# Caches Python
+__pycache__/
+*.pyc
+
+# Fichiers de notebooks
+.ipynb_checkpoints
+
+# Fichiers IntelliJ / PyCharm
+.idea/
