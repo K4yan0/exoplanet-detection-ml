@@ -18,3 +18,10 @@ __pycache__/
 
 # Fichiers IntelliJ / PyCharm
 .idea/
+
+# Dossiers de logs (TensorBoard, etc.)
+logs/
+
+# Fichiers de cache Python
+__pycache__/
+*.pyc
