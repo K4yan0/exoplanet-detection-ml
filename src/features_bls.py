@@ -1,5 +1,6 @@
 import numpy as np
 from astropy.timeseries import BoxLeastSquares
+from src.preprocess import normalize_flux
 
 def generate_bls_features(flux_row):
     """
@@ -8,45 +9,36 @@ def generate_bls_features(flux_row):
 
     Retourne des features statistiques sur le meilleur "creux" trouvé.
     """
-    times = np.arange(len(flux_row))
-    flux = flux_row
+    try:
+        flux_normalized = normalize_flux(flux_row)
+    except Exception as e:
+        print(f"Avertissement : Échec de normalize_flux : {e}")
+        return [0.0, 0.0, 0.0, 0.0]
 
-    # Normaliser le flux pour que la "profondeur" soit significative
-    flux_norm = flux - np.mean(flux)
+    times = np.arange(len(flux_normalized))
 
     # Définir les durées de transit à tester (en "bacs" d'index)
-    # Ex: de 1 bac (très court) à 100 bacs
-    transit_durations = np.linspace(1, 100, 10).astype(int)
+    transit_durations = np.linspace(1, 25, 10).astype(int)
 
     try:
-        # 1. Exécuter l'algorithme BLS
-        # Il teste toutes les périodes, durées, et heures de départ
-        bls = BoxLeastSquares(times, flux_norm)
+        # 3. Exécuter BLS sur les données PROPRES
+        bls = BoxLeastSquares(times, flux_normalized) # <-- Utiliser flux_normalized
 
-        # 'autopower' trouve le meilleur modèle de "boîte" (creux)
         results = bls.autopower(transit_durations, frequency_factor=5.0)
 
-        # 2. Extraire les "Features" du meilleur résultat
-        # 'results' contient les propriétés du *meilleur* creux trouvé
-
-        # L'index du meilleur pic de puissance
+        # 4. Extraire les "Features" du meilleur résultat
         best_index = np.argmax(results.power)
 
-        # La "signifiance" statistique du creux (très important !)
-        # C'est l'équivalent de notre 'peak_significance'
         peak_snr = results.power_snr[best_index]
-
-        # La profondeur du creux
         depth = results.depth[best_index]
-
-        # La durée du creux (en bacs)
         duration = results.duration[best_index]
-
-        # La période du creux (en bacs/jours)
         period = results.period[best_index]
 
-        return [peak_snr, depth, duration, period]
+        # On ajoute la "puissance" brute, au cas où
+        max_power = results.power[best_index]
+
+        return [peak_snr, depth, duration, period, max_power]
 
     except Exception as e:
-        # En cas d'échec (ex: données invalides)
-        return [0.0, 0.0, 0.0, 0.0]
+        # En cas d'échec de BLS
+        return [0.0, 0.0, 0.0, 0.0, 0.0]
