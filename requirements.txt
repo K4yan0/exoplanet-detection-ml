@@ -17,3 +17,5 @@ notebook
 # --- Utilities (Astro/Stats) ---
 scipy
 statsmodels
+astropy
+tqdm

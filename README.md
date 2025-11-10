@@ -1,44 +1,55 @@
-# 🪐 Détection d'Exoplanètes : Baseline (Random Forest) vs. Deep Learning (CNN 1D)
+# 🪐 Détection d'Exoplanètes : Une Investigation Itérative (RF, CNN, BLS)
 
+![Statut du Projet: Terminé - Données non concluantes](https://img.shields.io/badge/Statut-Termin%C3%A9%20(Donn%C3%A9es%20Non%20Concluantes)-red.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-Ce projet compare deux approches de Machine Learning pour la détection d'exoplanètes à partir des courbes de lumière (flux lumineux) des télescopes spatiaux TESS et Kepler.
+Ce projet documente une investigation approfondie pour détecter des exoplanètes à partir des courbes de lumière (flux lumineux) des télescopes spatiaux. Commençant par une simple comparaison entre Random Forest et CNN, le projet a évolué en une série de pivots méthodologiques pour répondre aux échecs de chaque approche, aboutissant à une conclusion définitive sur la qualité du jeu de données.
 
 ## 1. L'Hypothèse Scientifique 🎯
 
-Un "transit" d'exoplanète (le passage de la planète devant son étoile) crée une signature morphologique identifiable : un "creux" périodique et de courte durée dans la courbe de lumière de l'étoile.
-
-Ce projet vise à entraîner des modèles de Machine Learning à reconnaître cette signature pour la différencier du simple bruit de fond ou d'autres variations stellaires.
+L'hypothèse de départ était qu'un "transit" d'exoplanète crée une signature morphologique identifiable : un "creux" périodique et de courte durée dans la courbe de lumière de l'étoile. Le but était d'entraîner des modèles à reconnaître cette signature.
 
 ## 2. La Tâche de Machine Learning 🤖
 
-* **Tâche** : Classification Binaire Supervisée.
-* **Input (X)** : Une série temporelle (courbe de lumière, ex: `~3000+` colonnes `FLUX`).
+* **Tâche** : Classification Binaire Supervisée (fortement déséquilibrée).
+* **Input (X)** : Une série temporelle (courbe de lumière, `~3000+` colonnes `FLUX`).
 * **Output (Y)** : Prédiction à 2 classes : `0` (Pas de Planète) ou `1` (Planète Détectée).
 
-## 3. Méthodologie (Double Modèle) 🧠
+## 3. Méthodologie et Découvertes Itératives 🧠
 
-Pour évaluer la meilleure approche, nous implémentons et comparons deux modèles distincts :
+Ce qui a commencé comme une simple comparaison (Parties A & B) est devenu une enquête en plusieurs étapes (Parties C, D, E) pour comprendre pourquoi nos modèles échouaient.
 
-### Partie A : Le Modèle de Baseline (Random Forest)
+### Partie A : Baseline (Random Forest sur Features Simples)
 
-* **Objectif** : Établir un score de référence.
-* **Modèle** : `RandomForestClassifier`.
-* **Approche** : Basée sur l'**ingénierie de caractéristiques (feature engineering)**. Nous traduisons manuellement la série temporelle brute de 3000+ points en un petit ensemble de caractéristiques descriptives (ex: profondeur moyenne des creux, écart-type du flux, périodicité via autocorrélation).
+* **Approche** : Ingénierie de caractéristiques (ex: `mean`, `std`, `skew` sur les 3197 points).
+* **Résultat (v2)** : **Échec total.** Le score PR-AUC était équivalent au hasard. Les caractéristiques statistiques simples ne sont pas suffisantes.
 
-### Partie B : Le Modèle Avancé (Deep Learning)
+### Partie B : CNN 1D "End-to-End"
 
-* **Objectif** : Battre la baseline en utilisant l'apprentissage de caractéristiques.
-* **Modèle** : Réseau de Neurones Convolutif 1D (CNN 1D).
-* **Approche** : **Aucun feature engineering**. La courbe de lumière brute (vecteur de `~3000+` points) est fournie directement en entrée. Le CNN agit comme un détecteur de "forme" (shape) automatique, apprenant à identifier la morphologie du transit par lui-même.
+* **Approche** : Fournir les 3197 points de données brutes directement au CNN.
+* **Résultat (v3-v9)** : **Échec total.** Le signal de transit est trop faible et noyé dans le bruit. Le CNN n'a pas pu converger (Overfitting / Underfitting).
+
+### Partie C : CNN 1D sur "Pliage de Phase" (Lomb-Scargle)
+
+* **Approche** : Utiliser un périodogramme `LombScargle` pour trouver la "meilleure" période, puis "plier" la courbe de lumière sur cette période pour amplifier le signal.
+* **Résultat (v10-v16)** : **Échec "Garbage In, Garbage Out".** Un test de vérification (`sanity check`) a prouvé que notre fonction `find_best_period` était défectueuse et produisait des données inutilisables (du bruit aléatoire ou des lignes plates).
+
+### Partie D : CNN 1D sur Périodogramme Complet
+
+* **Approche** : Au lieu de plier, nous avons donné le graphique complet du périodogramme `LombScargle` (1000 points) au CNN pour qu'il trouve les "pics" de puissance.
+* **Résultat (v17-v22)** : **Succès partiel et chaos.** C'était notre meilleure tentative de CNN. En utilisant des poids de classe (`class_weight`) pour forcer l'apprentissage, nous avons **réussi à trouver 6 des 7 planètes** du set de test.
+* **Problème** : L'entraînement était **totalement instable**. Le modèle "paniquait" et générait des centaines de Faux Positifs (>360) pour trouver ces 6 planètes, le rendant inutilisable.
+
+### Partie E : Modèle Statistique sur Périodogramme (BLS)
+
+* **Approche** : Abandon du CNN. Nous avons utilisé l'algorithme standard de la NASA, **`BoxLeastSquares` (BLS)**, conçu spécifiquement pour trouver des transits. Nous avons extrait 4 caractéristiques clés (ex: `peak_snr`, `depth`) et les avons données à un Random Forest.
+* **Résultat (v23-v28)** : **Échec final et définitif.** L'algorithme BLS a tourné pendant 2 heures sur les 5087 étoiles et a conclu qu'il n'y avait **aucun signal de transit** à trouver. Les 37 "planètes" étaient statistiquement indiscernables du bruit.
 
 ## 4. Les Données ✅
 
-* **Source** : Télescope spatial TESS (ou Kepler).
-* **Dataset Suggéré** : [Exoplanet Hunting in TESS Light Curves (Kaggle)](https://www.kaggle.com/datasets/keplersmachines/kepler-labelled-time-series-data)
-* **Format** : `train.csv` et `test.csv` contenant un `LABEL` (Y) et `~3000+` colonnes `FLUX` (X).
-
-**Note importante** : Conformément aux bonnes pratiques, les fichiers de données brutes (`.csv`) sont listés dans le `.gitignore` et ne doivent pas être "pushés" sur ce dépôt. Pour exécuter le projet, veuillez télécharger les données depuis la source Kaggle et les placer dans le dossier `data/raw/`.
+* **Source** : [Exoplanet Hunting in TESS Light Curves (Kaggle)](https://www.kaggle.com/datasets/keplersmachines/kepler-labelled-time-series-data)
+* **Format** : `train.csv` et `test.csv`.
+* **Note** : Les `.csv` sont dans le `.gitignore`. Pour exécuter le projet, téléchargez-les et placez-les dans `data/raw/`.
 
 ## 5. Installation
 
@@ -46,11 +57,11 @@ Pour configurer votre environnement local et exécuter ce projet :
 
 1.  **Clonez le dépôt :**
     ```bash
-    git clone [https://github.com/VOTRE_NOM/exoplanet-detection-ml.git](https://github.com/VOTRE_NOM/exoplanet-detection-ml.git)
+    git clone [https://github.com/K4yan0/exoplanet-detection-ml] (https://github.com/K4yan0/exoplanet-detection-ml.git)
     cd exoplanet-detection-ml
     ```
 
-2.  **Créez un environnement virtuel (recommandé) :**
+2.  **Créez un environnement virtuel :**
     ```bash
     python -m venv venv
     source venv/bin/activate  # Sur Windows: .\venv\Scripts\activate
@@ -61,52 +72,35 @@ Pour configurer votre environnement local et exécuter ce projet :
     pip install -r requirements.txt
     ```
 
-## 6. Utilisation et Workflow
+## 6. Structure et Utilisation
 
-Ce projet utilise un workflow Git structuré :
+Les 14 notebooks de ce projet racontent l'histoire de cette investigation, numérotés par ordre d'expérimentation.
 
-* `main` : Branche de production, protégée. Les merges ne se font que depuis `develop`.
-* `develop` : Branche d'intégration principale (branche par défaut).
-* `feature/...` : Branches de travail pour les nouvelles fonctionnalités.
+* `01_EDA_...` / `02_RF_...` : Baselines (Échec)
+* `03_CNN_...` à `09_CNN_...` : Premiers tests CNN et augmentation (Échec)
+* `10_CNN_...` / `11_CNN_...` : Hypothèse du "Pliage de Phase" (Échec)
+* `12_CNN_...` : Hypothèse du "Périodogramme" (Succès partiel mais instable)
+* `13_Periodogram_Stats_...` : Pivot vers un modèle statistique (Échec)
+* `14_BLS_Stats_...` : Test final avec l'algorithme BLS (Échec définitif)
 
-Tout nouveau code doit être ajouté via une **Pull Request** d'une branche `feature/` vers `develop`.
+## 7. Conclusion & Résultats Finaux
 
-### Reproduire les résultats
+Ce projet a réussi, non pas à construire un modèle, mais à **prouver de manière concluante que le jeu de données est inutilisable** pour cette tâche.
 
-Les notebooks sont numérotés et doivent être exécutés dans l'ordre :
+Après 28 versions et pivots méthodologiques, nous avons démontré qu'il n'existe **aucune corrélation** entre le `LABEL` (Planète) et un quelconque signal de transit détectable dans les données `FLUX`.
 
-1.  **`notebooks/01_EDA_and_Preprocessing.ipynb`** :
-    * Chargement des données.
-    * Analyse exploratoire (EDA).
-    * Nettoyage, imputation des NaN et normalisation (detrending) des courbes de lumière.
+Notre test final (v28), utilisant l'algorithme standard de la NASA (`BoxLeastSquares`), a tourné pendant plus de 2 heures et a confirmé que **les 37 courbes de lumière labellées "Planète" sont statistiquement indiscernables du bruit de fond.**
 
-2.  **`notebooks/02_RF_Baseline_Model.ipynb`** :
-    * Génération des caractéristiques (feature engineering) via `src/features.py`.
-    * Entraînement et évaluation du `RandomForestClassifier`.
+### Leçons Apprises
 
-3.  **`notebooks/03_CNN_1D_Model.ipynb`** :
-    * Préparation des données brutes (mise en forme pour Keras/TensorFlow).
-    * Construction, entraînement et évaluation du modèle CNN 1D.
+| Approche | Modèle | Résultat | Leçon Apprise |
+| :--- | :--- | :--- | :--- |
+| **Données Brutes** | CNN 1D | **Échec** | Le signal est trop faible pour une approche "end-to-end" avec si peu de données. |
+| **Pliage de Phase** | CNN 1D | **Échec** | "Garbage In, Garbage Out". Un mauvais pipeline de features (v10) crée des données inutilisables. |
+| **Périodogramme** | CNN 1D | **Succès Partiel** | Le signal *est* là ! Nous avons trouvé **6/7 planètes**, mais le CNN est l'outil inadapté : l'entraînement est trop instable et génère >360 Faux Positifs. |
+| **Stats (Lomb-Scargle)** | Random Forest | **Échec** | `LombScargle` est le mauvais algorithme (il cherche des sinusoïdes, pas des transits). |
+| **Stats (BLS)** | Random Forest | **Échec Définitif** | L'algorithme standard de l'industrie (BLS) a prouvé qu'**il n'y a aucun signal de transit** à trouver. Le jeu de données est défectueux. |
 
-4.  **`notebooks/04_Model_Comparison.ipynb`** :
-    * Comparaison finale des deux modèles.
-    * Génération des matrices de confusion, calcul des F1-Scores et des courbes/scores PR-AUC.
-
-## 7. Structure du Dépôt
-
-## 8. Résultats Attendus (Point 6)
-
-L'évaluation finale comparera les deux modèles. Le dataset étant très déséquilibré (beaucoup plus de non-planètes que de planètes), l'Accuracy n'est pas une bonne métrique.
-
-Nous nous concentrerons sur :
-* **PR-AUC** (Aire sous la courbe Précision-Rappel) : La métrique principale pour ce type de problème.
-* **F1-Score** : L'équilibre entre Précision et Rappel.
-* **Matrice de Confusion** : Pour analyser les Faux Positifs et Faux Négatifs.
-
-L'hypothèse est que le **CNN 1D** obtiendra un score PR-AUC et F1 supérieur, car il est spécifiquement conçu pour la détection de motifs dans des séquences, surpassant ainsi les caractéristiques conçues manuellement.
-
-*(TODO: Insérer ici un tableau résumé des résultats finaux)*
-
-## 9. Licence
+## 8. Licence
 
 Ce projet est publié sous la Licence MIT. Voir le fichier `LICENSE` pour plus de détails.
