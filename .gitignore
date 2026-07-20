@@ -25,3 +25,5 @@ logs/
 # Fichiers de cache Python
 __pycache__/
 *.pyc
+
+graphify-out/
