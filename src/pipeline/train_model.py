@@ -54,10 +54,26 @@ def main():
     X_raw = data['X']
     Y = data['y']
     
-    # 2. Reshape X for the 1D CNN
+    # 2. Reshape and Normalize X for the 1D CNN
     num_samples = X_raw.shape[0]
     sequence_length = X_raw.shape[1]
-    X = X_raw.reshape((num_samples, sequence_length, 1))
+    
+    # CRITICAL FIX 2: Sanitize Data
+    # Some sneaky NaNs or Infs (infinite values) must have survived the interpolation in build_dataset.py.
+    # If even a single NaN enters the network, the gradients explode and loss becomes 'nan'.
+    X_raw = np.nan_to_num(X_raw, nan=1.0, posinf=1.0, neginf=1.0)
+    
+    # CRITICAL FIX: Z-Score Normalization
+    # The transit dips are tiny (e.g., a drop to 0.998). We need to standardize every single 
+    # light curve to have a mean of 0 and a standard deviation of 1.
+    mean = np.mean(X_raw, axis=1, keepdims=True)
+    std = np.std(X_raw, axis=1, keepdims=True)
+    X_scaled = (X_raw - mean) / (std + 1e-8)
+    
+    # One more safety net just in case standard deviation was completely 0
+    X_scaled = np.nan_to_num(X_scaled, nan=0.0)
+    
+    X = X_scaled.reshape((num_samples, sequence_length, 1))
     
     print(f"Total Dataset Shape: {X.shape}")
     print(f"Total Labels Shape: {Y.shape}")
