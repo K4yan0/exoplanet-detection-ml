@@ -1,7 +1,9 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout, Input
+from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.model_selection import train_test_split
 import os
 
 def create_1d_cnn(input_length):
@@ -9,8 +11,11 @@ def create_1d_cnn(input_length):
     Defines a modern 1D CNN architecture for exoplanet transit detection.
     """
     model = Sequential([
-        # Block 1: Detect basic local features (small drops in flux)
-        Conv1D(filters=16, kernel_size=5, activation='relu', input_shape=(input_length, 1)),
+        # Explicit Input layer (This fixes the Keras 3 warning from our dummy test!)
+        Input(shape=(input_length, 1)),
+        
+        # Block 1: Detect basic local features
+        Conv1D(filters=16, kernel_size=5, activation='relu'),
         MaxPooling1D(pool_size=2),
         
         # Block 2: Detect larger structural patterns (the 'U' shape)
@@ -21,16 +26,13 @@ def create_1d_cnn(input_length):
         Conv1D(filters=64, kernel_size=5, activation='relu'),
         MaxPooling1D(pool_size=2),
         
-        # Flatten for the fully connected layers
         Flatten(),
         
-        # Dense classification head
         Dense(64, activation='relu'),
-        Dropout(0.3),  # Regularization to prevent overfitting when we scale up
-        Dense(1, activation='sigmoid')  # Binary classification: 1 (Planet) or 0 (Non-Planet)
+        Dropout(0.3),  # Vital for preventing overfitting on our 1347 samples
+        Dense(1, activation='sigmoid')
     ])
     
-    # Compile the model using Adam and binary crossentropy
     model.compile(
         optimizer='adam',
         loss='binary_crossentropy',
@@ -40,48 +42,65 @@ def create_1d_cnn(input_length):
     return model
 
 def main():
-    # 1. Load the dataset
-    # We assume the script is executed from the project root directory
-    dataset_path = os.path.join('data', 'tess_ml_arrays', 'tess_dataset_v1.npz')
+    # 1. Load the MASSIVE dataset
+    dataset_path = os.path.join('data', 'tess_ml_arrays', 'tess_dataset_full.npz')
     
     if not os.path.exists(dataset_path):
         print(f"Error: Could not find dataset at {dataset_path}")
-        print("Please make sure you are running this script from the project root folder!")
         return
 
-    print(f"Loading dataset from {dataset_path}...")
+    print(f"Loading full dataset from {dataset_path}...")
     data = np.load(dataset_path)
     X_raw = data['X']
     Y = data['y']
     
-    print(f"Original X shape: {X_raw.shape}")
-    print(f"Original Y shape: {Y.shape}")
-    
     # 2. Reshape X for the 1D CNN
-    # Keras Conv1D requires input shape: (batch_size, sequence_length, channels)
-    # Since we have a single flux channel, channels = 1
     num_samples = X_raw.shape[0]
     sequence_length = X_raw.shape[1]
-    
     X = X_raw.reshape((num_samples, sequence_length, 1))
-    print(f"Reshaped X for CNN (batch, sequence, channels): {X.shape}")
     
-    # 3. Initialize the model
+    print(f"Total Dataset Shape: {X.shape}")
+    print(f"Total Labels Shape: {Y.shape}")
+    
+    # 3. Split into Training and Validation Sets (80% Train, 20% Test)
+    # We use 'stratify=Y' to ensure the 50/50 ratio of Planets/Non-Planets is maintained in both sets.
+    print("\nSplitting data into 80% Training and 20% Validation...")
+    X_train, X_val, y_train, y_val = train_test_split(
+        X, Y, test_size=0.2, random_state=42, stratify=Y
+    )
+    
+    print(f"Training samples: {X_train.shape[0]}")
+    print(f"Validation samples: {X_val.shape[0]}")
+    
+    # 4. Initialize the model
     print("\nInitializing 1D CNN model...")
     model = create_1d_cnn(input_length=sequence_length)
-    model.summary()
     
-    # 4. Dummy Training Loop
-    print("\n--- Starting Dummy Training (Validating Tensor Plumbing) ---")
-    # We train for 5 epochs just to ensure the plumbing (shapes, dimensions, loss) works.
-    history = model.fit(
-        X, Y,
-        epochs=5,
-        batch_size=2,  # Tiny batch size because we only have 3 samples
+    # 5. Define Early Stopping 
+    # This automatically stops training if the model stops learning, preventing it from just memorizing the data.
+    early_stop = EarlyStopping(
+        monitor='val_loss',
+        patience=5,
+        restore_best_weights=True,
         verbose=1
     )
     
-    print("\n[SUCCESS] Tensor plumbing validated! The model compiles and trains perfectly.")
+    # 6. Real Training Loop
+    print("\n--- Starting Deep Learning Training ---")
+    history = model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=30,          # Increased for real training
+        batch_size=32,      # Standard batch size for 1300+ samples
+        callbacks=[early_stop],
+        verbose=1
+    )
+    
+    # 7. Final Evaluation
+    print("\n--- Final Validation Performance ---")
+    loss, accuracy = model.evaluate(X_val, y_val, verbose=0)
+    print(f"Validation Accuracy: {accuracy * 100:.2f}%")
+    print(f"Validation Loss: {loss:.4f}")
 
 if __name__ == '__main__':
     main()
