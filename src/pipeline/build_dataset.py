@@ -2,29 +2,14 @@ import lightkurve as lk
 import numpy as np
 import pandas as pd
 import os
+import json
 
-def process_star(star_id, period, epoch, num_bins=2000):
+def generate_sample(flattened_lc, period, epoch, num_bins=2000):
     """
-    Fetches, flattens, folds, and bins a light curve for a given star.
+    Folds and bins an already flattened light curve.
     Returns a 1D numpy array of length `num_bins`.
     """
-    print(f"  -> Fetching SPOC data for {star_id}...")
-    # Get the SPOC pipeline light curve, download the first one found
-    search_result = lk.search_lightcurve(star_id, mission='TESS', author='SPOC')
-    
-    if len(search_result) == 0:
-        print(f"  [!] No SPOC data found for {star_id}. Skipping.")
-        return None
-        
-    lc = search_result[0].download()
-    
-    print(f"  -> Flattening...")
-    flattened_lc = lc.flatten(window_length=101)
-    
-    print(f"  -> Folding (Period: {period}, Epoch: {epoch})...")
     folded_lc = flattened_lc.fold(period=period, epoch_time=epoch)
-    
-    print(f"  -> Binning to {num_bins} points...")
     binned_lc = folded_lc.bin(bins=num_bins)
     
     flux = binned_lc.flux.value
@@ -33,60 +18,91 @@ def process_star(star_id, period, epoch, num_bins=2000):
     if np.isnan(flux).any():
         flux = pd.Series(flux).interpolate(limit_direction='both').values
         
+    # Check if interpolation left any NaNs (e.g., if entire array was NaN)
+    if np.isnan(flux).any():
+        return None
+        
     return flux
 
 def main():
-    # 1. Define our small test dictionary of targets
-    # Format: { 'Star Name': {'label': 1 or 0, 'period': float, 'epoch': float} }
-    targets = {
-        # POSITIVES (Real Exoplanets)
-        'Pi Mensae':   {'label': 1, 'period': 6.267852, 'epoch': 1325.504},
-        'WASP-126':    {'label': 1, 'period': 3.2888,   'epoch': 1354.214}, # Approximate epoch for WASP-126b
+    # 1. Load the JSON targets
+    json_path = os.path.join('data', 'tess_positive_targets.json')
+    if not os.path.exists(json_path):
+        print(f"Error: Could not find {json_path}")
+        print("Make sure you are running from the project root!")
+        return
         
-        # NEGATIVES (Non-planets / Random stars folded on arbitrary periods to simulate noise)
-        'Tau Ceti':    {'label': 0, 'period': 8.4321,   'epoch': 1330.0},
-        'Sirius':      {'label': 0, 'period': 4.1234,   'epoch': 1328.0}
-    }
+    with open(json_path, 'r') as f:
+        targets = json.load(f)
+        
+    print(f"Loaded {len(targets)} targets from {json_path}")
     
     X_list = []
     y_list = []
     
-    print("Starting Dataset Generation...")
+    print("\nStarting Mass Dataset Generation...")
     
-    # 2. Loop through the dictionary
-    for star_id, params in targets.items():
-        print(f"\nProcessing {star_id} (Label: {params['label']})")
+    # 2. Loop through all stars
+    for count, (star_id, params) in enumerate(targets.items(), 1):
+        # Fix the "TIC TIC" formatting bug from the fetch script
+        clean_star_id = star_id.replace("TIC TIC ", "TIC ")
+        
+        print(f"[{count}/{len(targets)}] Processing {clean_star_id}...")
+        
         try:
-            flux_array = process_star(
-                star_id=star_id, 
-                period=params['period'], 
-                epoch=params['epoch']
-            )
+            # Step A: Fetch once
+            search_result = lk.search_lightcurve(clean_star_id, mission='TESS', author='SPOC')
+            if len(search_result) == 0:
+                print(f"  [!] No SPOC data found. Skipping.")
+                continue
+                
+            # Download the first light curve found
+            lc = search_result[0].download()
+            if lc is None:
+                continue
             
-            if flux_array is not None:
-                # 3. Append to our lists
-                X_list.append(flux_array)
-                y_list.append(params['label'])
-                print(f"  [SUCCESS] Added {star_id} to dataset.")
+            # Step B: Flatten once (This is computationally heavy, so doing it once per star is brilliant)
+            flattened_lc = lc.flatten(window_length=101)
+            
+            true_period = params['period']
+            true_epoch = params['epoch']
+            
+            # Step C: Generate POSITIVE sample (Label 1)
+            flux_pos = generate_sample(flattened_lc, true_period, true_epoch)
+            if flux_pos is not None:
+                X_list.append(flux_pos)
+                y_list.append(1)
+                
+            # Step D: Generate NEGATIVE sample (Label 0)
+            # Mangle the period and shift the epoch
+            mangled_period = true_period * 1.345
+            shifted_epoch = true_epoch + (true_period * 0.5)
+            
+            flux_neg = generate_sample(flattened_lc, mangled_period, shifted_epoch)
+            if flux_neg is not None:
+                X_list.append(flux_neg)
+                y_list.append(0)
+                
+            print(f"  [SUCCESS] Added 1 Positive and 1 Negative sample.")
+            
         except Exception as e:
             print(f"  [ERROR] Failed to process {star_id}: {e}")
 
-    # Convert lists to final Numpy matrices
+    # Convert to final Numpy matrices
     X = np.array(X_list)
     Y = np.array(y_list)
     
-    print("\n--- Dataset Summary ---")
+    print("\n--- Final Dataset Summary ---")
     print(f"X Matrix Shape: {X.shape}")
     print(f"Y Vector Shape: {Y.shape}")
     
-    # 4. Save the dataset
-    # We save to data/tess_ml_arrays/ assuming the script is run from the project root
+    # Save the dataset
     save_dir = os.path.join('data', 'tess_ml_arrays')
     os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, 'tess_dataset_full.npz')
     
-    save_path = os.path.join(save_dir, 'tess_dataset_v1.npz')
     np.savez(save_path, X=X, y=Y)
-    print(f"\nDataset successfully saved to: {save_path}")
+    print(f"\nMass Dataset successfully saved to: {save_path}")
 
 if __name__ == '__main__':
     main()
