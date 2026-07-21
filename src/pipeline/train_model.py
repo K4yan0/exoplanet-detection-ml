@@ -73,9 +73,7 @@ def main():
     # One more safety net just in case standard deviation was completely 0
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
     
-    # CRITICAL FIX 3: Outlier Clipping
-    # Prevent extreme single-point spikes (-6 or +6 standard deviations) from acting like transit edges
-    X_scaled = np.clip(X_scaled, -3.0, 3.0)
+    # REMOVED np.clip: The model was using the artificial flat bottom at -3.0 as a cheat code!
     
     X = X_scaled.reshape((num_samples, sequence_length, 1))
     

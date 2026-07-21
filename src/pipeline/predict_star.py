@@ -33,7 +33,9 @@ def process_and_predict(star_id):
     # This is a critical astronomical step: We don't know the orbital period of a random star.
     # We use BLS to mathematically search for the strongest periodic dip, and use that to fold!
     print("3. Running BLS algorithm to find candidate transit period...")
-    periodogram = flattened_lc.to_periodogram(method='bls', period=np.linspace(1, 20, 10000))
+    # By omitting the manual period grid, lightkurve automatically generates a highly 
+    # optimized, ultra-fine frequency grid to avoid missing the true period by a fraction of a day.
+    periodogram = flattened_lc.to_periodogram(method='bls')
     best_period = periodogram.period_at_max_power
     best_epoch = periodogram.transit_time_at_max_power
     
@@ -63,7 +65,7 @@ def process_and_predict(star_id):
     std = np.std(X_raw, axis=1, keepdims=True)
     X_scaled = (X_raw - mean) / (std + 1e-8)
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
-    X_scaled = np.clip(X_scaled, -3.0, 3.0) # Apply our powerful outlier clipping
+    # REMOVED np.clip to prevent the Clever Hans effect
     
     X = X_scaled.reshape((1, 2000, 1))
     
