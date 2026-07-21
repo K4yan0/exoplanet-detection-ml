@@ -26,15 +26,15 @@ def create_1d_cnn(input_length):
         Conv1D(filters=64, kernel_size=5, activation='relu'),
         MaxPooling1D(pool_size=2),
         
-        Flatten(),
+        Flatten(), 
         
         Dense(64, activation='relu'),
-        Dropout(0.3),  # Vital for preventing overfitting on our 1347 samples
+        Dropout(0.3),
         Dense(1, activation='sigmoid')
     ])
     
     model.compile(
-        optimizer='adam',
+        optimizer='adam', # Reverted back to default 0.001
         loss='binary_crossentropy',
         metrics=['accuracy']
     )
@@ -72,6 +72,10 @@ def main():
     
     # One more safety net just in case standard deviation was completely 0
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
+    
+    # CRITICAL FIX 3: Outlier Clipping
+    # Prevent extreme single-point spikes (-6 or +6 standard deviations) from acting like transit edges
+    X_scaled = np.clip(X_scaled, -3.0, 3.0)
     
     X = X_scaled.reshape((num_samples, sequence_length, 1))
     

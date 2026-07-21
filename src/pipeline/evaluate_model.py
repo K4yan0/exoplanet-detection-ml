@@ -20,6 +20,9 @@ def load_and_preprocess_data():
     X_scaled = (X_raw - mean) / (std + 1e-8)
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
     
+    # EXACT same outlier clipping as training to neutralize extreme spikes
+    X_scaled = np.clip(X_scaled, -3.0, 3.0)
+    
     num_samples = X_scaled.shape[0]
     sequence_length = X_scaled.shape[1]
     X = X_scaled.reshape((num_samples, sequence_length, 1))
