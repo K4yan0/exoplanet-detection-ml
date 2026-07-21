@@ -117,6 +117,13 @@ def main():
     loss, accuracy = model.evaluate(X_val, y_val, verbose=0)
     print(f"Validation Accuracy: {accuracy * 100:.2f}%")
     print(f"Validation Loss: {loss:.4f}")
+    
+    # 8. Save the trained model
+    save_dir = os.path.join('data', 'models')
+    os.makedirs(save_dir, exist_ok=True)
+    model_path = os.path.join(save_dir, 'exoplanet_cnn_v1.keras')
+    model.save(model_path)
+    print(f"\n[SUCCESS] Model successfully saved to {model_path}")
 
 if __name__ == '__main__':
     main()
