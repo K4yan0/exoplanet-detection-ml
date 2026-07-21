@@ -33,9 +33,9 @@ def process_and_predict(star_id):
     # This is a critical astronomical step: We don't know the orbital period of a random star.
     # We use BLS to mathematically search for the strongest periodic dip, and use that to fold!
     print("3. Running BLS algorithm to find candidate transit period...")
-    # By omitting the manual period grid, lightkurve automatically generates a highly 
-    # optimized, ultra-fine frequency grid to avoid missing the true period by a fraction of a day.
-    periodogram = flattened_lc.to_periodogram(method='bls')
+    # We restrict the search to 1 to 20 days to avoid high-frequency noise aliases (like 0.33 days),
+    # but we use an ultra-high resolution of 100,000 points to ensure we nail the exact fractional period!
+    periodogram = flattened_lc.to_periodogram(method='bls', period=np.linspace(1, 20, 100000))
     best_period = periodogram.period_at_max_power
     best_epoch = periodogram.transit_time_at_max_power
     
