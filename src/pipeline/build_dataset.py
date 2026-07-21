@@ -18,6 +18,11 @@ def generate_sample(flattened_lc, period, epoch, num_bins=2000):
     if np.isnan(flux).any():
         flux = pd.Series(flux).interpolate(limit_direction='both').values
         
+    # STRICT SHAPE CHECK: Keras requires exactly num_bins (2000) points.
+    # lightkurve.bin() occasionally returns e.g. 1999 or 2001 bins if phase edges are empty.
+    if len(flux) != num_bins:
+        return None
+        
     # Check if interpolation left any NaNs (e.g., if entire array was NaN)
     if np.isnan(flux).any():
         return None
