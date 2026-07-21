@@ -40,7 +40,7 @@ def predict():
             return jsonify({'error': 'Download failed from NASA MAST.'})
             
         flattened_lc = lc.flatten(window_length=101)
-        periodogram = flattened_lc.to_periodogram(method='bls')
+        periodogram = flattened_lc.to_periodogram(method='bls', period=np.linspace(1, 20, 100000))
         best_period = periodogram.period_at_max_power
         best_epoch = periodogram.transit_time_at_max_power
         
