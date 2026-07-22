@@ -15,12 +15,15 @@ def load_and_preprocess_data():
     
     # EXACT same preprocessing as train_model.py to ensure the data looks identical
     X_raw = np.nan_to_num(X_raw, nan=1.0, posinf=1.0, neginf=1.0)
-    mean = np.mean(X_raw, axis=1, keepdims=True)
-    std = np.std(X_raw, axis=1, keepdims=True)
-    X_scaled = (X_raw - mean) / (std + 1e-8)
+    median = np.median(X_raw, axis=1, keepdims=True)
+    mad = np.median(np.abs(X_raw - median), axis=1, keepdims=True)
+    mad_scaled = mad * 1.4826
+    
+    X_scaled = (X_raw - median) / (mad_scaled + 1e-8)
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
     
-    # REMOVED np.clip
+    # One-Sided Clip: Cap positive flares at +3.0, leave negatives intact
+    X_scaled = np.clip(X_scaled, a_min=None, a_max=3.0)
     
     num_samples = X_scaled.shape[0]
     sequence_length = X_scaled.shape[1]

@@ -61,11 +61,15 @@ def process_and_predict(star_id):
     X_raw = np.array([flux])
     X_raw = np.nan_to_num(X_raw, nan=1.0, posinf=1.0, neginf=1.0)
     
-    mean = np.mean(X_raw, axis=1, keepdims=True)
-    std = np.std(X_raw, axis=1, keepdims=True)
-    X_scaled = (X_raw - mean) / (std + 1e-8)
+    median = np.median(X_raw, axis=1, keepdims=True)
+    mad = np.median(np.abs(X_raw - median), axis=1, keepdims=True)
+    mad_scaled = mad * 1.4826
+    
+    X_scaled = (X_raw - median) / (mad_scaled + 1e-8)
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
-    # REMOVED np.clip to prevent the Clever Hans effect
+    
+    # One-Sided Clip: Cap positive flares at +3.0, leave bottom unclipped!
+    X_scaled = np.clip(X_scaled, a_min=None, a_max=3.0)
     
     X = X_scaled.reshape((1, 2000, 1))
     
