@@ -71,28 +71,37 @@ def process_and_predict(star_id):
     # One-Sided Clip: Cap positive flares at +3.0, leave bottom unclipped!
     X_scaled = np.clip(X_scaled, a_min=None, a_max=3.0)
     
-    X = X_scaled.reshape((1, 2000, 1))
+    # 6. Predict & Veto
+    num_clipped_points = np.sum(X_scaled == 3.0)
     
-    # 6. Predict
-    print("6. Loading Neural Network...")
-    model_path = os.path.join('data', 'models', 'exoplanet_cnn_v1.keras')
-    if not os.path.exists(model_path):
-        print(f"Error: Model not found at {model_path}.")
-        return
-        
-    model = load_model(model_path)
-    
-    print("7. Running Prediction...")
-    prediction = model.predict(X, verbose=0)[0][0]
-    
-    print("\n" + "="*40)
-    if prediction > 0.5:
-        print(f"🌟 PLANET DETECTED! 🌟")
-        print(f"Confidence: {prediction * 100:.2f}%")
+    if num_clipped_points > 50:
+        print("\n" + "="*40)
+        print("⚠️ VETO: STELLAR VARIABILITY ARTIFACT ⚠️")
+        print(f"Rejected: {num_clipped_points} data points hit the +3.0 ceiling.")
+        print("The AI was bypassed to prevent a False Positive.")
+        print("="*40 + "\n")
+        prediction = 0.0
     else:
-        print(f"❌ NO PLANET DETECTED ❌")
-        print(f"Confidence (Noise): {(1 - prediction) * 100:.2f}%")
-    print("="*40 + "\n")
+        print("6. Loading Neural Network...")
+        model_path = os.path.join('data', 'models', 'exoplanet_cnn_v1.keras')
+        if not os.path.exists(model_path):
+            print(f"Error: Model not found at {model_path}.")
+            return
+            
+        model = load_model(model_path)
+        
+        print("7. Running Prediction...")
+        X = X_scaled.reshape((1, 2000, 1))
+        prediction = model.predict(X, verbose=0)[0][0]
+        
+        print("\n" + "="*40)
+        if prediction > 0.5:
+            print(f"🌟 PLANET DETECTED! 🌟")
+            print(f"Confidence: {prediction * 100:.2f}%")
+        else:
+            print(f"❌ NO PLANET DETECTED ❌")
+            print(f"Confidence (Noise): {(1 - prediction) * 100:.2f}%")
+        print("="*40 + "\n")
     
     # 7. Plotting the result
     plt.figure(figsize=(10, 5))

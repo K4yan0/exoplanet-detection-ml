@@ -66,8 +66,15 @@ def predict():
         # One-Sided Clip: Cap positive flares at +3.0
         X_scaled = np.clip(X_scaled, a_min=None, a_max=3.0)
         
-        X = X_scaled.reshape((1, 2000, 1))
-        prediction = float(model.predict(X, verbose=0)[0][0])
+        # HEURISTIC VETO
+        num_clipped_points = int(np.sum(X_scaled == 3.0))
+        veto_triggered = bool(num_clipped_points > 50)
+        
+        if veto_triggered:
+            prediction = 0.0
+        else:
+            X = X_scaled.reshape((1, 2000, 1))
+            prediction = float(model.predict(X, verbose=0)[0][0])
         
         # Plotting
         plt.figure(figsize=(8, 4))
@@ -95,7 +102,8 @@ def predict():
             'success': True,
             'prediction': prediction,
             'period': float(best_period.value),
-            'image_url': f'/static/plots/{plot_filename}'
+            'image_url': f'/static/plots/{plot_filename}',
+            'veto': veto_triggered
         })
         
     except Exception as e:

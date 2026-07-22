@@ -305,14 +305,28 @@
                 const badge = document.getElementById('statusBadge');
                 const confValue = document.getElementById('confidenceValue');
                 
-                if (data.prediction > 0.5) {
+                if (data.veto) {
+                    badge.className = 'status-badge status-noise';
+                    badge.innerText = '⚠️ REJECTED: ARTIFACT';
+                    badge.style.color = '#fbbf24';
+                    badge.style.borderColor = '#fbbf24';
+                    badge.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
+                    confValue.innerText = 'VETO';
+                    confValue.style.color = '#fbbf24';
+                } else if (data.prediction > 0.5) {
                     badge.className = 'status-badge status-planet';
                     badge.innerText = '🌟 PLANET DETECTED';
+                    badge.style.color = 'var(--accent)';
+                    badge.style.borderColor = 'var(--accent)';
+                    badge.style.backgroundColor = 'rgba(0, 255, 204, 0.1)';
                     confValue.innerText = (data.prediction * 100).toFixed(2) + '%';
                     confValue.style.color = 'var(--accent)';
                 } else {
                     badge.className = 'status-badge status-noise';
                     badge.innerText = '❌ NO PLANET (NOISE)';
+                    badge.style.color = 'var(--danger)';
+                    badge.style.borderColor = 'var(--danger)';
+                    badge.style.backgroundColor = 'rgba(255, 51, 102, 0.1)';
                     confValue.innerText = ((1 - data.prediction) * 100).toFixed(2) + '%';
                     confValue.style.color = 'var(--danger)';
                 }
