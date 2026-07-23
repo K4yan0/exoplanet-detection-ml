@@ -9,6 +9,20 @@ Part 2 documents the breakthrough success of abandoning the static dataset, buil
 
 ---
 
+## Table of Contents
+- [Part 1: The Initial Investigation (Kaggle Dataset)](#part-1-the-initial-investigation-kaggle-dataset)
+- [Part 2: The Breakthrough (Live NASA API & Deep Learning)](#part-2-the-breakthrough-live-nasa-api--deep-learning)
+  - [1. The Pivot](#1-the-pivot)
+  - [2. The Advanced Data Pipeline](#2-the-advanced-data-pipeline)
+  - [3. The Deep Learning Core](#3-the-deep-learning-core)
+  - [4. Engineering Guardrails (The Heuristic Veto)](#4-engineering-guardrails-the-heuristic-veto)
+  - [5. The Web Application](#5-the-web-application)
+  - [6. Visualizing the Results](#6-visualizing-the-results)
+- [Installation & Usage](#installation--usage)
+- [License](#license)
+
+---
+
 ## Part 1: The Initial Investigation (Kaggle Dataset)
 
 The initial hypothesis was that a planetary transit creates an identifiable morphological signature (a U-shaped dip in a light curve) that a machine learning model could learn to recognize. The initial task was binary classification on a heavily imbalanced Kaggle dataset.
@@ -57,6 +71,11 @@ After proving the Kaggle dataset was corrupted, we rebuilt the pipeline from scr
 We trained a 1D Convolutional Neural Network (CNN) with a lightweight architecture (16 -> 32 -> 64 filters with Dropout) to prevent overfitting on the small but pristine dataset.
 * **Performance:** The model shattered previous ceilings, achieving **90.37% Accuracy** with an **AUC of 0.924** and a significantly lowered False Negative rate.
 
+<p align="center">
+  <img src="assets/confusion_matrix.png" width="45%" alt="Confusion Matrix"/>
+  <img src="assets/roc_curve.png" width="45%" alt="ROC Curve"/>
+</p>
+
 ### 4. Engineering Guardrails (The Heuristic Veto)
 A known artifact of the one-sided clip is that highly variable stars can create an artificial flat ceiling at `+3.0`. The CNN occasionally mistook the natural downward swing from this artificial ceiling for a deep planetary transit (a Clever Hans effect). 
 
@@ -69,6 +88,14 @@ The entire inference pipeline is wrapped in a modern, dark-mode Flask Web Applic
 3. Apply the Heuristic Veto shield.
 4. Run the deep learning inference.
 5. Display the prediction alongside a dynamically generated, high-resolution matplotlib graph.
+
+### 6. Visualizing the Results
+The Web Application dynamically generates these real-time inference plots. Notice the perfectly clean U-shaped dips preserved by the Robust MAD scaling, while the surrounding stellar noise and cosmic ray flares are successfully clamped by the one-sided clip.
+
+<p align="center">
+  <img src="static/plots/TIC_261136679.png" width="45%" alt="Pi Mensae Transit"/>
+  <img src="static/plots/TIC_34068865.png" width="45%" alt="WASP-126 Transit"/>
+</p>
 
 ## Installation & Usage
 
