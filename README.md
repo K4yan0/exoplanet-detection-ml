@@ -1,106 +1,122 @@
-# 🪐 Détection d'Exoplanètes : Une Investigation Itérative (RF, CNN, BLS)
+# Exoplanet Detection: From Kaggle Failure to NASA API Success
 
-![Statut du Projet: Terminé - Données non concluantes](https://img.shields.io/badge/Statut-Termin%C3%A9%20(Donn%C3%A9es%20Non%20Concluantes)-red.svg)
+![Project Status: Completed - High Accuracy](https://img.shields.io/badge/Status-Completed%20(90%25%20Accuracy)-brightgreen.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-Ce projet documente une investigation approfondie pour détecter des exoplanètes à partir des courbes de lumière (flux lumineux) des télescopes spatiaux. Commençant par une simple comparaison entre Random Forest et CNN, le projet a évolué en une série de pivots méthodologiques pour répondre aux échecs de chaque approche, aboutissant à une conclusion définitive sur la qualité du jeu de données.
+This project documents a two-part investigation into exoplanet detection using Deep Learning. 
+Part 1 documents an exhaustive investigation and eventual failure caused by a corrupted Kaggle dataset.
+Part 2 documents the breakthrough success of abandoning the static dataset, building a custom pipeline that fetches live data from the NASA MAST archive, and training a 90% accurate Convolutional Neural Network (CNN) protected by heuristic engineering guardrails and deployed as a Flask Web Application featuring interactive Plotly visualization, Explainable AI (Grad-CAM), and Asynchronous Batch Processing.
 
-## 1. L'Hypothèse Scientifique 🎯
+---
 
-L'hypothèse de départ était qu'un "transit" d'exoplanète crée une signature morphologique identifiable : un "creux" périodique et de courte durée dans la courbe de lumière de l'étoile. Le but était d'entraîner des modèles à reconnaître cette signature.
+## Table of Contents
+- [Part 1: The Initial Investigation (Kaggle Dataset)](#part-1-the-initial-investigation-kaggle-dataset)
+- [Part 2: The Breakthrough (Live NASA API & Deep Learning)](#part-2-the-breakthrough-live-nasa-api--deep-learning)
+  - [1. The Pivot](#1-the-pivot)
+  - [2. The Advanced Data Pipeline](#2-the-advanced-data-pipeline)
+  - [3. The Deep Learning Core (CNN vs Random Forest)](#3-the-deep-learning-core-cnn-vs-random-forest)
+  - [4. Engineering Guardrails (The Heuristic Veto)](#4-engineering-guardrails-the-heuristic-veto)
+  - [5. The Web Application & XAI Dashboard](#5-the-web-application--xai-dashboard)
+  - [6. Batch Discovery Engine](#6-batch-discovery-engine)
+- [Installation & Usage](#installation--usage)
+- [License](#license)
 
-## 2. La Tâche de Machine Learning 🤖
+---
 
-* **Tâche** : Classification Binaire Supervisée (fortement déséquilibrée).
-* **Input (X)** : Une série temporelle (courbe de lumière, `~3000+` colonnes `FLUX`).
-* **Output (Y)** : Prédiction à 2 classes : `0` (Pas de Planète) ou `1` (Planète Détectée).
+## Part 1: The Initial Investigation (Kaggle Dataset)
 
-## 3. Méthodologie et Découvertes Itératives 🧠
+The initial hypothesis was that a planetary transit creates an identifiable morphological signature (a U-shaped dip in a light curve) that a machine learning model could learn to recognize. The initial task was binary classification on a heavily imbalanced Kaggle dataset.
 
-Ce qui a commencé comme une simple comparaison (Parties A & B) est devenu une enquête en plusieurs étapes (Parties C, D, E) pour comprendre pourquoi nos modèles échouaient.
+### Methodology and Iterative Discoveries
 
-### Partie A : Baseline (Random Forest sur Features Simples)
+What began as a simple baseline comparison evolved into a multi-step investigation to understand why the models were failing.
 
-* **Approche** : Ingénierie de caractéristiques (ex: `mean`, `std`, `skew` sur les 3197 points).
-* **Résultat (v2)** : **Échec total.** Le score PR-AUC était équivalent au hasard. Les caractéristiques statistiques simples ne sont pas suffisantes.
+**Phase A: Baseline (Random Forest on Simple Features)**
+* **Approach:** Feature engineering (mean, std, skew) on the light curve points.
+* **Result:** Total failure. The PR-AUC score was equivalent to random guessing.
 
-### Partie B : CNN 1D "End-to-End"
+**Phase B: 1D CNN "End-to-End"**
+* **Approach:** Feeding the raw sequential points directly into a CNN.
+* **Result:** Total failure. The transit signal was too weak and drowned in background noise. The CNN could not converge.
 
-* **Approche** : Fournir les 3197 points de données brutes directement au CNN.
-* **Résultat (v3-v9)** : **Échec total.** Le signal de transit est trop faible et noyé dans le bruit. Le CNN n'a pas pu converger (Overfitting / Underfitting).
+**Phase C: 1D CNN on Phase-Folding (Lomb-Scargle)**
+* **Approach:** Using a Lomb-Scargle periodogram to find the best period, then phase-folding the light curve to amplify the signal.
+* **Result:** "Garbage In, Garbage Out". A sanity check proved the period-finding function was producing unusable data.
 
-### Partie C : CNN 1D sur "Pliage de Phase" (Lomb-Scargle)
+**Phase D: 1D CNN on Full Periodogram**
+* **Approach:** Feeding the entire Lomb-Scargle power spectrum to the CNN to find power peaks.
+* **Result:** Partial success but chaotic. The model found 6 out of 7 planets but generated over 360 False Positives, making it unusable.
 
-* **Approche** : Utiliser un périodogramme `LombScargle` pour trouver la "meilleure" période, puis "plier" la courbe de lumière sur cette période pour amplifier le signal.
-* **Résultat (v10-v16)** : **Échec "Garbage In, Garbage Out".** Un test de vérification (`sanity check`) a prouvé que notre fonction `find_best_period` était défectueuse et produisait des données inutilisables (du bruit aléatoire ou des lignes plates).
+**Phase E: Statistical Model on BLS**
+* **Approach:** Abandoning the CNN. We used NASA's standard Box-Least Squares (BLS) algorithm to extract features for a Random Forest.
+* **Result:** Definitive failure. The BLS algorithm proved conclusively that the 37 light curves labeled as "Planets" in the Kaggle dataset were statistically indistinguishable from background noise. The dataset was inherently flawed.
 
-### Partie D : CNN 1D sur Périodogramme Complet
+---
 
-* **Approche** : Au lieu de plier, nous avons donné le graphique complet du périodogramme `LombScargle` (1000 points) au CNN pour qu'il trouve les "pics" de puissance.
-* **Résultat (v17-v22)** : **Succès partiel et chaos.** C'était notre meilleure tentative de CNN. En utilisant des poids de classe (`class_weight`) pour forcer l'apprentissage, nous avons **réussi à trouver 6 des 7 planètes** du set de test.
-* **Problème** : L'entraînement était **totalement instable**. Le modèle "paniquait" et générait des centaines de Faux Positifs (>360) pour trouver ces 6 planètes, le rendant inutilisable.
+## Part 2: The Breakthrough (Live NASA API & Deep Learning)
 
-### Partie E : Modèle Statistique sur Périodogramme (BLS)
+### 1. The Pivot
+After proving the Kaggle dataset was corrupted, we rebuilt the pipeline from scratch. Instead of relying on static CSVs, we connected directly to the NASA MAST API using the `lightkurve` library to download pristine, raw TESS (Transiting Exoplanet Survey Satellite) data.
 
-* **Approche** : Abandon du CNN. Nous avons utilisé l'algorithme standard de la NASA, **`BoxLeastSquares` (BLS)**, conçu spécifiquement pour trouver des transits. Nous avons extrait 4 caractéristiques clés (ex: `peak_snr`, `depth`) et les avons données à un Random Forest.
-* **Résultat (v23-v28)** : **Échec final et définitif.** L'algorithme BLS a tourné pendant 2 heures sur les 5087 étoiles et a conclu qu'il n'y avait **aucun signal de transit** à trouver. Les 37 "planètes" étaient statistiquement indiscernables du bruit.
+### 2. The Advanced Data Pipeline
+* **Data Ingestion:** Fetching highly rigorous SPOC-processed light curves directly from NASA.
+* **Astrophysics Processing:** 
+  * Flattening the light curve using a 1001-point rolling median. This wide window removes stellar rotation variations without accidentally falling into transits and creating artificial "horns" (over-filtering artifacts).
+  * Using Box-Least Squares (BLS) with high-resolution period grids (100,000 points) to accurately find the orbital period and epoch, preventing aliasing and signal smearing.
+  * Phase-folding the light curve to stack multiple transits and amplify the signal, then binning it into exactly 2000 points.
+* **Robust Normalization (MAD):** To prevent massive positive stellar flares from inflating the standard deviation and squashing the transit depths, we implemented Robust Scaling using the Median and Median Absolute Deviation (MAD). 
+* **One-Sided Clipping:** We clipped positive outliers at `+3.0` to crush cosmic rays and flares, while leaving the deep negative transits completely unclipped to preserve their true physical depth.
 
-## 4. Les Données ✅
+### 3. The Deep Learning Core (CNN vs Random Forest)
+At the genesis of this project, we evaluated traditional ensemble methods (Random Forest) against Deep Learning (CNNs). While powerful for structured tabular data, Random Forests evaluate features independently, meaning they struggle to intrinsically understand the sequential, time-series "shape" of a light curve without massive feature engineering.
 
-* **Source** : [Exoplanet Hunting in TESS Light Curves (Kaggle)](https://www.kaggle.com/datasets/keplersmachines/kepler-labelled-time-series-data)
-* **Format** : `train.csv` et `test.csv`.
-* **Note** : Les `.csv` sont dans le `.gitignore`. Pour exécuter le projet, téléchargez-les et placez-les dans `data/raw/`.
+Instead, we trained a 1D Convolutional Neural Network (CNN) with a lightweight architecture (16 -> 32 -> 64 filters with Dropout) to prevent overfitting on the small but pristine dataset. Because CNNs evaluate local spatial coherence, the network inherently learned the morphological signature of a transit (the steep ingress, the flat bottom, and the egress).
+* **Performance:** The model shattered previous ceilings, achieving **90.37% Accuracy** with an **AUC of 0.924** and a significantly lowered False Negative rate.
 
-## 5. Installation
+<p align="center">
+  <img src="assets/confusion_matrix.png" width="45%" alt="Confusion Matrix"/>
+  <img src="assets/roc_curve.png" width="45%" alt="ROC Curve"/>
+</p>
 
-Pour configurer votre environnement local et exécuter ce projet :
+### 4. Engineering Guardrails (The Heuristic Veto)
+A known artifact of the one-sided clip is that highly variable stars can create an artificial flat ceiling at `+3.0`. The CNN occasionally mistook the natural downward swing from this artificial ceiling for a deep planetary transit (a Clever Hans effect). 
 
-1.  **Clonez le dépôt :**
-    ```bash
-    git clone [https://github.com/K4yan0/exoplanet-detection-ml] (https://github.com/K4yan0/exoplanet-detection-ml.git)
-    cd exoplanet-detection-ml
-    ```
+Instead of forcing the probabilistic Neural Network to learn this deterministic mathematical artifact, we implemented a **Heuristic Veto**. This engineering guardrail sits in front of the inference pipeline. If it detects more than 50 data points stuck to the `+3.0` ceiling, it recognizes the stellar variability artifact, bypasses the Neural Network entirely, and automatically rejects the target with a 0% confidence veto.
 
-2.  **Créez un environnement virtuel :**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Sur Windows: .\venv\Scripts\activate
-    ```
+### 5. The Web Application & XAI Dashboard
+The entire inference pipeline is wrapped in a modern, dark-mode Flask Web Application featuring glassmorphism UI design. Rather than relying on static images, the application generates **interactive Plotly.js visualizations**. 
 
-3.  **Installez les dépendances :**
-    ```bash
-    pip install -r requirements.txt
-    ```
+Because the CNN physically learns the shape of the transit rather than just looking at isolated data points, we deployed **Explainable AI (XAI)** via a custom 1D Gradient-weighted Class Activation Mapping (Grad-CAM) algorithm. This acts as an "AI MRI", mapping exactly what the CNN is paying attention to onto the plotted light curve.
+* Users can toggle between the **First Convolutional Layer** (which highlights the broad "W" shape of the transit) and the **Final Convolutional Layer** (which rigorously targets the ingress/egress edges).
+* The dashboard dynamically extracts critical astrophysics telemetry, including **Orbital Period**, **Transit Depth**, and **Transit Duration**.
 
-## 6. Structure et Utilisation
+### 6. Batch Discovery Engine
+Astronomers don't analyze one star at a time. The platform includes a dedicated Bulk Processing engine allowing users to input dozens of TIC IDs simultaneously. A background thread processes the targets asynchronously, updating the UI via long-polling with a live progress bar. Each processed star features an inline, expandable XAI mini-graph for rapid human verification.
 
-Les 14 notebooks de ce projet racontent l'histoire de cette investigation, numérotés par ordre d'expérimentation.
+## Installation & Usage
 
-* `01_EDA_...` / `02_RF_...` : Baselines (Échec)
-* `03_CNN_...` à `09_CNN_...` : Premiers tests CNN et augmentation (Échec)
-* `10_CNN_...` / `11_CNN_...` : Hypothèse du "Pliage de Phase" (Échec)
-* `12_CNN_...` : Hypothèse du "Périodogramme" (Succès partiel mais instable)
-* `13_Periodogram_Stats_...` : Pivot vers un modèle statistique (Échec)
-* `14_BLS_Stats_...` : Test final avec l'algorithme BLS (Échec définitif)
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/K4yan0/exoplanet-detection-ml.git
+   cd exoplanet-detection-ml
+   ```
 
-## 7. Conclusion & Résultats Finaux
+2. **Create a virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   ```
 
-Ce projet a réussi, non pas à construire un modèle, mais à **prouver de manière concluante que le jeu de données est inutilisable** pour cette tâche.
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Après 28 versions et pivots méthodologiques, nous avons démontré qu'il n'existe **aucune corrélation** entre le `LABEL` (Planète) et un quelconque signal de transit détectable dans les données `FLUX`.
+4. **Launch the Web App:**
+   ```bash
+   python app.py
+   ```
+   Open your browser and navigate to `http://127.0.0.1:5000`. Test it out with a known exoplanet like `TIC 261136679` (Pi Mensae) or `TIC 34068865` (WASP-126)!
 
-Notre test final (v28), utilisant l'algorithme standard de la NASA (`BoxLeastSquares`), a tourné pendant plus de 2 heures et a confirmé que **les 37 courbes de lumière labellées "Planète" sont statistiquement indiscernables du bruit de fond.**
-
-### Leçons Apprises
-
-| Approche | Modèle | Résultat | Leçon Apprise |
-| :--- | :--- | :--- | :--- |
-| **Données Brutes** | CNN 1D | **Échec** | Le signal est trop faible pour une approche "end-to-end" avec si peu de données. |
-| **Pliage de Phase** | CNN 1D | **Échec** | "Garbage In, Garbage Out". Un mauvais pipeline de features (v10) crée des données inutilisables. |
-| **Périodogramme** | CNN 1D | **Succès Partiel** | Le signal *est* là ! Nous avons trouvé **6/7 planètes**, mais le CNN est l'outil inadapté : l'entraînement est trop instable et génère >360 Faux Positifs. |
-| **Stats (Lomb-Scargle)** | Random Forest | **Échec** | `LombScargle` est le mauvais algorithme (il cherche des sinusoïdes, pas des transits). |
-| **Stats (BLS)** | Random Forest | **Échec Définitif** | L'algorithme standard de l'industrie (BLS) a prouvé qu'**il n'y a aucun signal de transit** à trouver. Le jeu de données est défectueux. |
-
-## 8. Licence
-
-Ce projet est publié sous la Licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for details.

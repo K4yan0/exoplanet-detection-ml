@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Discovery - Exoplanet Hunter AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --accent: #00ffcc;
+            --accent-glow: rgba(0, 255, 204, 0.3);
+            --danger: #ff3366;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 70%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            z-index: 10;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, var(--text-main), var(--accent));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .search-box {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            outline: none;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        button {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px var(--accent-glow);
+        }
+
+        button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 30px;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            padding: 20px;
+            display: none;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            align-items: center;
+        }
+
+        .badge-planet { color: var(--accent); font-weight: bold; background: rgba(0, 255, 204, 0.1); padding: 5px 10px; border-radius: 5px; border: 1px solid var(--accent); }
+        .badge-noise { color: var(--danger); font-weight: bold; background: rgba(255, 51, 102, 0.1); padding: 5px 10px; border-radius: 5px; border: 1px solid var(--danger); }
+        .badge-veto { color: #fbbf24; font-weight: bold; background: rgba(251, 191, 36, 0.1); padding: 5px 10px; border-radius: 5px; border: 1px solid #fbbf24;}
+        
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Exoplanet Hunter AI</h1>
+            <p class="subtitle">Powered by Deep Learning & NASA TESS Data</p>
+        </header>
+
+        <nav style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; animation: fadeInDown 0.8s ease;">
+            <a href="/" style="color: white; text-decoration: none; font-weight: 600; padding: 10px 20px; border-radius: 8px; transition: 0.3s;">Single Target Deep-Dive</a>
+            <a href="/discovery" style="color: var(--accent); text-decoration: none; font-weight: 600; padding: 10px 20px; background: rgba(0,255,204,0.1); border-radius: 8px; border: 1px solid var(--accent);">Batch Discovery Mode</a>
+        </nav>
+
+        <div class="search-box">
+            <p style="color: var(--text-muted); font-size: 1rem;">Enter multiple TIC IDs (one per line) to process them asynchronously:</p>
+            <textarea id="starIds" placeholder="261136679&#10;34068865&#10;..."></textarea>
+            <button id="batchBtn" onclick="startBatch()">Start Bulk Analysis</button>
+        </div>
+        
+        <div class="results" id="resultsBox">
+            <h3>Batch Processing Status: <span id="statusText">Starting...</span></h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div id="resultsList" style="margin-top: 20px;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        async function startBatch() {
+            const lines = document.getElementById('starIds').value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+            if (lines.length === 0) return;
+            
+            document.getElementById('batchBtn').disabled = true;
+            document.getElementById('resultsBox').style.display = 'block';
+            document.getElementById('resultsList').innerHTML = '';
+            document.getElementById('progressBar').style.width = '0%';
+            
+            const response = await fetch('/start_batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ star_ids: lines })
+            });
+            const data = await response.json();
+            
+            pollStatus(data.job_id);
+        }
+
+        window.batchResults = {};
+        window.renderedGraphs = {};
+
+        async function pollStatus(jobId) {
+            const response = await fetch('/batch_status/' + jobId);
+            const data = await response.json();
+            
+            document.getElementById('statusText').innerText = data.status === 'completed' ? 'Completed' : `Running... (${data.progress}%)`;
+            document.getElementById('progressBar').style.width = data.progress + '%';
+            
+            let html = '';
+            data.results.forEach(res => {
+                window.batchResults[res.star_id] = res;
+                let badge = '';
+                if (!res.success) {
+                    badge = `<span class="badge-noise" style="font-size: 0.9rem;">ERROR: ${res.error}</span>`;
+                } else if (res.veto) {
+                    badge = `<span class="badge-veto">VETO: ARTIFACT</span>`;
+                } else if (res.prediction > 0.5) {
+                    badge = `<span class="badge-planet">PLANET DETECTED (${(res.prediction*100).toFixed(1)}%)</span>`;
+                } else {
+                    badge = `<span class="badge-noise">NO PLANET (${((1-res.prediction)*100).toFixed(1)}%)</span>`;
+                }
+                
+                const graphId = 'graph_' + res.star_id.replace(/\s+/g, '');
+                
+                html += `
+                    <div class="result-item" style="flex-direction: column; align-items: stretch; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'" onclick="toggleGraph('${res.star_id}', '${graphId}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 1.1rem; color: white; display: flex; align-items: center; gap: 10px;">
+                                ${res.star_id} 
+                                <span style="font-size: 0.8rem; color: var(--accent);">▼ AI View</span>
+                            </span>
+                            ${badge}
+                        </div>
+                        <div id="${graphId}" style="display: none; width: 100%; height: 250px; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;"></div>
+                    </div>
+                `;
+            });
+            document.getElementById('resultsList').innerHTML = html;
+            
+            // Re-render open graphs if they were open during poll update
+            Object.keys(window.renderedGraphs).forEach(gid => {
+                const el = document.getElementById(gid);
+                if (el && window.renderedGraphs[gid]) {
+                    el.style.display = 'block';
+                    Plotly.Plots.resize(el);
+                }
+            });
+            
+            if (data.status !== 'completed' && !data.error) {
+                setTimeout(() => pollStatus(jobId), 2000);
+            } else {
+                document.getElementById('batchBtn').disabled = false;
+            }
+        }
+
+        function toggleGraph(starId, graphId) {
+            const graphDiv = document.getElementById(graphId);
+            if (!graphDiv) return;
+            
+            if (graphDiv.style.display === 'none') {
+                graphDiv.style.display = 'block';
+                if (!window.renderedGraphs[graphId]) {
+                    const data = window.batchResults[starId];
+                    if (data && data.success) {
+                        drawMiniPlot(graphId, data);
+                        window.renderedGraphs[graphId] = true;
+                    } else {
+                        graphDiv.innerHTML = `<p style="color: var(--danger); text-align: center; margin-top: 20px;">No AI data available.</p>`;
+                    }
+                }
+            } else {
+                graphDiv.style.display = 'none';
+                window.renderedGraphs[graphId] = false;
+            }
+        }
+
+        function drawMiniPlot(divId, data) {
+            const heatmap = data.heatmap_conv1; // First layer (Broad Shapes) for quicker intuitive human interpretation
+            const isPlanet = data.prediction > 0.5;
+            
+            const trace = {
+                y: data.flux_data,
+                text: heatmap.map(h => `Attention: ${(h*100).toFixed(1)}%`),
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: 'rgba(255, 255, 255, 0.2)', width: 1 },
+                marker: { 
+                    color: heatmap, 
+                    colorscale: [
+                        [0, 'rgba(255, 255, 255, 0.05)'],
+                        [0.2, isPlanet ? 'rgba(0, 255, 204, 0.2)' : 'rgba(255, 51, 102, 0.2)'],
+                        [1, isPlanet ? '#00ffcc' : '#ff3366']
+                    ],
+                    size: 3,
+                    showscale: false
+                },
+                hoverinfo: 'y+text'
+            };
+            
+            const layout = {
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                xaxis: { visible: false, fixedrange: true },
+                yaxis: { visible: false, fixedrange: true },
+                margin: { l: 0, r: 0, t: 10, b: 0 }
+            };
+            
+            Plotly.newPlot(divId, [trace], layout, { responsive: true, displayModeBar: false });
+        }
+    </script>
+</body>
+</html>
