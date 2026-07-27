@@ -247,6 +247,14 @@
                     <div class="metric-value" id="periodValue">6.26 Days</div>
                 </div>
             </div>
+            
+            <div id="heatmapControls" style="display: none; text-align: center; margin-bottom: 20px;">
+                <label style="color: var(--text-muted); margin-right: 15px; font-weight: 600;">View AI Brain Layer:</label>
+                <select id="layerSelect" style="background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid var(--accent); padding: 8px 15px; border-radius: 8px; outline: none; cursor: pointer; font-family: 'Outfit', sans-serif;">
+                    <option value="conv3">Final Layer (Edge Detection)</option>
+                    <option value="conv1">First Layer (Broad Shapes)</option>
+                </select>
+            </div>
 
             <div class="graph-container">
                 <div id="transitGraph" style="width: 100%; height: 400px;"></div>
@@ -334,40 +342,70 @@
 
                 document.getElementById('periodValue').innerText = data.period.toFixed(4) + ' Days';
                 
-                // Plotly interactive graph
-                const plotColor = data.prediction > 0.5 ? '#00ffcc' : '#ff3366';
-                const trace = {
-                    y: data.flux_data,
-                    type: 'scatter',
-                    mode: 'lines',
-                    line: { color: plotColor, width: 2 },
-                    hoverinfo: 'y'
-                };
+                // Store globally for toggle
+                window.currentData = data;
+                document.getElementById('heatmapControls').style.display = 'block';
                 
-                const layout = {
-                    title: {
-                        text: `${data.star_id} Folded Light Curve`,
-                        font: { color: 'white', family: 'Outfit, sans-serif' }
-                    },
-                    paper_bgcolor: 'transparent',
-                    plot_bgcolor: 'transparent',
-                    xaxis: {
-                        title: 'Phase Bins',
-                        color: 'gray',
-                        gridcolor: '#1e293b',
-                        zerolinecolor: '#1e293b'
-                    },
-                    yaxis: {
-                        title: 'Normalized Flux (Z-Score)',
-                        color: 'gray',
-                        gridcolor: '#1e293b',
-                        zerolinecolor: '#1e293b'
-                    },
-                    margin: { l: 60, r: 20, t: 60, b: 60 }
-                };
+                function drawPlot(layer) {
+                    const heatmap = layer === 'conv1' ? window.currentData.heatmap_conv1 : window.currentData.heatmap_conv3;
+                    const isPlanet = window.currentData.prediction > 0.5;
+                    
+                    const trace = {
+                        y: window.currentData.flux_data,
+                        text: heatmap.map(h => `AI Attention: ${(h*100).toFixed(1)}%`),
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: 'rgba(255, 255, 255, 0.2)', width: 1 },
+                        marker: { 
+                            color: heatmap, 
+                            colorscale: [
+                                [0, 'rgba(255, 255, 255, 0.05)'],
+                                [0.2, isPlanet ? 'rgba(0, 255, 204, 0.2)' : 'rgba(255, 51, 102, 0.2)'],
+                                [1, isPlanet ? '#00ffcc' : '#ff3366']
+                            ],
+                            size: 5,
+                            showscale: true,
+                            colorbar: {
+                                title: layer === 'conv1' ? 'Layer 1 Attention' : 'Final Layer Attention',
+                                titlefont: { color: 'white', family: 'Outfit, sans-serif' },
+                                tickfont: { color: 'gray' },
+                                thickness: 15
+                            }
+                        },
+                        hoverinfo: 'y+text'
+                    };
+                    
+                    const layout = {
+                        title: {
+                            text: `${window.currentData.star_id} Folded Light Curve`,
+                            font: { color: 'white', family: 'Outfit, sans-serif' }
+                        },
+                        paper_bgcolor: 'transparent',
+                        plot_bgcolor: 'transparent',
+                        xaxis: {
+                            title: 'Phase Bins',
+                            color: 'gray',
+                            gridcolor: '#1e293b',
+                            zerolinecolor: '#1e293b'
+                        },
+                        yaxis: {
+                            title: 'Normalized Flux (Z-Score)',
+                            color: 'gray',
+                            gridcolor: '#1e293b',
+                            zerolinecolor: '#1e293b'
+                        },
+                        margin: { l: 60, r: 20, t: 60, b: 60 }
+                    };
+                    
+                    const config = { responsive: true, displayModeBar: true, displaylogo: false };
+                    Plotly.react('transitGraph', [trace], layout, config);
+                }
                 
-                const config = { responsive: true, displayModeBar: true, displaylogo: false };
-                Plotly.newPlot('transitGraph', [trace], layout, config);
+                drawPlot(document.getElementById('layerSelect').value);
+                
+                document.getElementById('layerSelect').onchange = function(e) {
+                    drawPlot(e.target.value);
+                };
 
                 results.style.display = 'block';
                 

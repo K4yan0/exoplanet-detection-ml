@@ -70,9 +70,46 @@ def predict():
         
         if veto_triggered:
             prediction = 0.0
+            upsampled_heatmap_conv1 = [0.0] * 2000
+            upsampled_heatmap_conv3 = [0.0] * 2000
         else:
             X = X_scaled.reshape((1, 2000, 1))
             prediction = float(model.predict(X, verbose=0)[0][0])
+            
+            # Helper for Grad-CAM
+            def compute_gradcam(layer_name):
+                feature_extractor = tf.keras.Model(model.inputs, model.get_layer(layer_name).output)
+                with tf.GradientTape() as tape:
+                    conv_outputs = feature_extractor(X)
+                    tape.watch(conv_outputs)
+                    
+                    x_layer = conv_outputs
+                    layer_names = [layer.name for layer in model.layers]
+                    start_idx = layer_names.index(layer_name) + 1
+                    for layer in model.layers[start_idx:]:
+                        x_layer = layer(x_layer)
+                    preds = x_layer
+                    
+                    loss = preds[:, 0] if prediction > 0.5 else 1.0 - preds[:, 0]
+                    
+                grads = tape.gradient(loss, conv_outputs)
+                pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
+                
+                heatmap = conv_outputs[0] @ pooled_grads[..., tf.newaxis]
+                heatmap = tf.squeeze(heatmap)
+                heatmap = tf.maximum(heatmap, 0)
+                
+                max_heat = tf.math.reduce_max(heatmap)
+                if max_heat > 0:
+                    heatmap /= max_heat
+                
+                heatmap = heatmap.numpy()
+                original_x = np.linspace(0, 1, 2000)
+                heatmap_x = np.linspace(0, 1, len(heatmap))
+                return np.interp(original_x, heatmap_x, heatmap).tolist()
+                
+            upsampled_heatmap_conv1 = compute_gradcam('conv1d')
+            upsampled_heatmap_conv3 = compute_gradcam('conv1d_2')
         
         # Return data for interactive plotting on the frontend
         flux_data = X_scaled[0].flatten().tolist()
@@ -82,6 +119,8 @@ def predict():
             'prediction': prediction,
             'period': float(best_period.value),
             'flux_data': flux_data,
+            'heatmap_conv1': upsampled_heatmap_conv1,
+            'heatmap_conv3': upsampled_heatmap_conv3,
             'star_id': star_id,
             'veto': veto_triggered
         })
