@@ -118,5 +118,11 @@ Astronomers don't analyze one star at a time. The platform includes a dedicated 
    ```
    Open your browser and navigate to `http://127.0.0.1:5000`. Test it out with a known exoplanet like `TIC 261136679` (Pi Mensae) or `TIC 34068865` (WASP-126)!
 
+## Attribution & Citation
+If you use this code, pipeline, or dataset methodology in your own research, portfolio, or web application, please credit this repository by linking back to it. 
+
+**Example:**
+> *Exoplanet detection pipeline and CNN architecture adapted from [K4yan0/exoplanet-detection-ml](https://github.com/K4yan0/exoplanet-detection-ml).*
+
 ## License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
