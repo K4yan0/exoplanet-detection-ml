@@ -4,9 +4,7 @@ import pandas as pd
 import lightkurve as lk
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-import matplotlib
-matplotlib.use('Agg') # Prevent GUI threading issues in Flask
-import matplotlib.pyplot as plt
+
 from flask import Flask, request, jsonify, render_template
 
 app = Flask(__name__)
@@ -76,33 +74,15 @@ def predict():
             X = X_scaled.reshape((1, 2000, 1))
             prediction = float(model.predict(X, verbose=0)[0][0])
         
-        # Plotting
-        plt.figure(figsize=(8, 4))
-        color = '#00ffcc' if prediction > 0.5 else '#ff3366'
-        plt.plot(X_scaled[0].flatten(), color=color, linewidth=1.5)
-        
-        # Beautiful styling
-        plt.gca().set_facecolor('#0f172a')
-        plt.gcf().patch.set_facecolor('#0f172a')
-        plt.title(f"{star_id} Folded Light Curve", color='white', pad=15)
-        plt.xlabel('Phase Bins', color='gray')
-        plt.ylabel('Normalized Flux (Z-Score)', color='gray')
-        plt.tick_params(colors='gray')
-        plt.grid(color='#1e293b', linestyle='--', alpha=0.5)
-        plt.tight_layout()
-        
-        # Save image
-        os.makedirs('static/plots', exist_ok=True)
-        plot_filename = f'{star_id.replace(" ", "_")}.png'
-        plot_path = os.path.join('static', 'plots', plot_filename)
-        plt.savefig(plot_path, dpi=120)
-        plt.close()
+        # Return data for interactive plotting on the frontend
+        flux_data = X_scaled[0].flatten().tolist()
         
         return jsonify({
             'success': True,
             'prediction': prediction,
             'period': float(best_period.value),
-            'image_url': f'/static/plots/{plot_filename}',
+            'flux_data': flux_data,
+            'star_id': star_id,
             'veto': veto_triggered
         })
         

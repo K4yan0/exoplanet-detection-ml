@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exoplanet Hunter AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -248,7 +249,7 @@
             </div>
 
             <div class="graph-container">
-                <img id="transitGraph" src="" alt="Transit Graph">
+                <div id="transitGraph" style="width: 100%; height: 400px;"></div>
             </div>
         </div>
     </div>
@@ -332,7 +333,41 @@
                 }
 
                 document.getElementById('periodValue').innerText = data.period.toFixed(4) + ' Days';
-                document.getElementById('transitGraph').src = data.image_url + '?t=' + new Date().getTime();
+                
+                // Plotly interactive graph
+                const plotColor = data.prediction > 0.5 ? '#00ffcc' : '#ff3366';
+                const trace = {
+                    y: data.flux_data,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: plotColor, width: 2 },
+                    hoverinfo: 'y'
+                };
+                
+                const layout = {
+                    title: {
+                        text: `${data.star_id} Folded Light Curve`,
+                        font: { color: 'white', family: 'Outfit, sans-serif' }
+                    },
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    xaxis: {
+                        title: 'Phase Bins',
+                        color: 'gray',
+                        gridcolor: '#1e293b',
+                        zerolinecolor: '#1e293b'
+                    },
+                    yaxis: {
+                        title: 'Normalized Flux (Z-Score)',
+                        color: 'gray',
+                        gridcolor: '#1e293b',
+                        zerolinecolor: '#1e293b'
+                    },
+                    margin: { l: 60, r: 20, t: 60, b: 60 }
+                };
+                
+                const config = { responsive: true, displayModeBar: true, displaylogo: false };
+                Plotly.newPlot('transitGraph', [trace], layout, config);
 
                 results.style.display = 'block';
                 
