@@ -222,6 +222,11 @@
             <p class="subtitle">Powered by Deep Learning & NASA TESS Data</p>
         </header>
 
+        <nav style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; animation: fadeInDown 0.8s ease;">
+            <a href="/" style="color: var(--accent); text-decoration: none; font-weight: 600; padding: 10px 20px; background: rgba(0,255,204,0.1); border-radius: 8px; border: 1px solid var(--accent);">Single Target Deep-Dive</a>
+            <a href="/discovery" style="color: white; text-decoration: none; font-weight: 600; padding: 10px 20px; border-radius: 8px; transition: 0.3s;">Batch Discovery Mode</a>
+        </nav>
+
         <div class="search-box">
             <input type="text" id="starInput" placeholder="Enter Star ID (e.g., TIC 261136679)" value="TIC 261136679">
             <button id="scanBtn" onclick="scanStar()">Scan Target</button>
