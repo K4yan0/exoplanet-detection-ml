@@ -51,6 +51,7 @@
             font-size: 3rem;
             font-weight: 800;
             background: linear-gradient(90deg, var(--text-main), var(--accent));
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
@@ -251,6 +252,14 @@
                     <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Orbital Period</div>
                     <div class="metric-value" id="periodValue">6.26 Days</div>
                 </div>
+                <div class="metric-card">
+                    <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Transit Depth</div>
+                    <div class="metric-value" id="depthValue">-- ppt</div>
+                </div>
+                <div class="metric-card">
+                    <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase;">Transit Duration</div>
+                    <div class="metric-value" id="durationValue">-- Hrs</div>
+                </div>
             </div>
             
             <div id="heatmapControls" style="display: none; text-align: center; margin-bottom: 20px;">
@@ -334,18 +343,27 @@
                     badge.style.borderColor = 'var(--accent)';
                     badge.style.backgroundColor = 'rgba(0, 255, 204, 0.1)';
                     confValue.innerText = (data.prediction * 100).toFixed(2) + '%';
-                    confValue.style.color = 'var(--accent)';
+                    document.getElementById('confidenceValue').innerText = (data.prediction * 100).toFixed(2) + '%';
+                    document.getElementById('confidenceValue').style.color = 'var(--accent)';
                 } else {
                     badge.className = 'status-badge status-noise';
                     badge.innerText = '❌ NO PLANET (NOISE)';
                     badge.style.color = 'var(--danger)';
                     badge.style.borderColor = 'var(--danger)';
                     badge.style.backgroundColor = 'rgba(255, 51, 102, 0.1)';
-                    confValue.innerText = ((1 - data.prediction) * 100).toFixed(2) + '%';
-                    confValue.style.color = 'var(--danger)';
+                    document.getElementById('confidenceValue').innerText = ((1 - data.prediction) * 100).toFixed(2) + '%';
+                    document.getElementById('confidenceValue').style.color = 'var(--danger)';
+                }
+                
+                if(data.prediction > 0.5) {
+                    document.getElementById('confidenceValue').style.color = 'var(--accent)';
+                } else {
+                    document.getElementById('confidenceValue').style.color = 'var(--danger)';
                 }
 
                 document.getElementById('periodValue').innerText = data.period.toFixed(4) + ' Days';
+                document.getElementById('depthValue').innerText = data.depth_ppt.toFixed(2) + ' ppt';
+                document.getElementById('durationValue').innerText = data.duration_hours.toFixed(1) + ' Hrs';
                 
                 // Store globally for toggle
                 window.currentData = data;

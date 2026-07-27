@@ -44,6 +44,10 @@ def analyze_star(star_id):
         best_period = periodogram.period_at_max_power
         best_epoch = periodogram.transit_time_at_max_power
         
+        # Extract advanced astrophysical properties
+        duration_hours = float(periodogram.duration_at_max_power.value) * 24
+        depth_ppt = float(periodogram.depth_at_max_power) * 1000 # Parts per thousand
+        
         folded_lc = flattened_lc.fold(period=best_period, epoch_time=best_epoch)
         binned_lc = folded_lc.bin(bins=2000)
         
@@ -112,6 +116,8 @@ def analyze_star(star_id):
             'success': True,
             'prediction': prediction,
             'period': float(best_period.value),
+            'duration_hours': duration_hours,
+            'depth_ppt': depth_ppt,
             'flux_data': flux_data,
             'heatmap_conv1': upsampled_heatmap_conv1,
             'heatmap_conv3': upsampled_heatmap_conv3,
