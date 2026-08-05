@@ -1,6 +1,7 @@
 import os
 import uuid
 import threading
+import re
 import numpy as np
 from flask import Flask, request, jsonify, render_template
 from tensorflow.keras.models import load_model
@@ -23,6 +24,8 @@ BATCH_JOBS = {}
 def analyze_star(star_id):
     """Orchestrates the astronomy, inference, and XAI modules."""
     star_id = star_id.strip()
+    # Ensure there's only one space between TIC and the number
+    star_id = re.sub(r'\s+', ' ', star_id)
     if not star_id.startswith('TIC'):
         star_id = f"TIC {star_id}"
     star_id = star_id.replace("TIC TIC ", "TIC ")
