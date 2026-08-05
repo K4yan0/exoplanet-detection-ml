@@ -265,8 +265,10 @@
             <div id="heatmapControls" style="display: none; text-align: center; margin-bottom: 20px;">
                 <label style="color: var(--text-muted); margin-right: 15px; font-weight: 600;">View AI Brain Layer:</label>
                 <select id="layerSelect" style="background: rgba(15, 23, 42, 0.8); color: white; border: 1px solid var(--accent); padding: 8px 15px; border-radius: 8px; outline: none; cursor: pointer; font-family: 'Outfit', sans-serif;">
-                    <option value="conv3">Final Layer (Edge Detection)</option>
-                    <option value="conv1">First Layer (Broad Shapes)</option>
+                    <option value="shap">SHAP (Game Theory Attribution)</option>
+                    <option value="ig">Integrated Gradients (Pixel Attribution)</option>
+                    <option value="conv3">Grad-CAM: Final Layer (Edge Detection)</option>
+                    <option value="conv1">Grad-CAM: First Layer (Broad Shapes)</option>
                 </select>
                 <button id="ablationBtn" onclick="runAblation()" style="margin-left: 20px; padding: 8px 15px; font-size: 0.9rem;">Run Ablation Analysis</button>
             </div>
@@ -388,7 +390,19 @@
                 document.getElementById('heatmapControls').style.display = 'block';
                 
                 function drawPlot(layer) {
-                    const heatmap = layer === 'conv1' ? window.currentData.heatmap_conv1 : window.currentData.heatmap_conv3;
+                    let heatmap = window.currentData.heatmap_shap;
+                    let title = 'SHAP Attribution';
+                    if (layer === 'conv1') {
+                        heatmap = window.currentData.heatmap_conv1;
+                        title = 'Layer 1 Attention';
+                    } else if (layer === 'conv3') {
+                        heatmap = window.currentData.heatmap_conv3;
+                        title = 'Final Layer Attention';
+                    } else if (layer === 'ig') {
+                        heatmap = window.currentData.heatmap_ig;
+                        title = 'Integrated Gradients';
+                    }
+                    
                     const isPlanet = window.currentData.prediction > 0.5;
                     
                     const trace = {
@@ -407,7 +421,7 @@
                             size: 5,
                             showscale: true,
                             colorbar: {
-                                title: layer === 'conv1' ? 'Layer 1 Attention' : 'Final Layer Attention',
+                                title: title,
                                 titlefont: { color: 'white', family: 'Outfit, sans-serif' },
                                 tickfont: { color: 'gray' },
                                 thickness: 15
@@ -473,12 +487,18 @@
             tbody.innerHTML = '';
             
             try {
+                let selectedHeatmap = window.currentData.heatmap_shap;
+                const layer = document.getElementById('layerSelect').value;
+                if (layer === 'conv1') selectedHeatmap = window.currentData.heatmap_conv1;
+                else if (layer === 'conv3') selectedHeatmap = window.currentData.heatmap_conv3;
+                else if (layer === 'ig') selectedHeatmap = window.currentData.heatmap_ig;
+                
                 const response = await fetch('/ablation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         flux_data: window.currentData.flux_data,
-                        heatmap: document.getElementById('layerSelect').value === 'conv1' ? window.currentData.heatmap_conv1 : window.currentData.heatmap_conv3,
+                        heatmap: selectedHeatmap,
                         original_prediction: window.currentData.prediction
                     })
                 });
