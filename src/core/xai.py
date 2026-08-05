@@ -35,6 +35,63 @@ def compute_gradcam(model, X_scaled, layer_name, prediction):
     
     return upsampled_heatmap
 
+import shap
+
+def compute_integrated_gradients(model, X_scaled, m_steps=50):
+    """Computes Integrated Gradients attribution."""
+    X = tf.cast(X_scaled.reshape((1, 2000, 1)), tf.float32)
+    # Baseline is a flat light curve (0.0 due to Z-score normalization)
+    baseline = tf.zeros_like(X)
+    
+    alphas = tf.linspace(start=0.0, stop=1.0, num=m_steps+1)
+    alphas_x = alphas[:, tf.newaxis, tf.newaxis, tf.newaxis]
+    
+    # Shape: (m_steps+1, 1, 2000, 1) -> reshape to (m_steps+1, 2000, 1)
+    interpolated_images = baseline + alphas_x * (X - baseline)
+    interpolated_images = tf.reshape(interpolated_images, (m_steps+1, 2000, 1))
+    
+    with tf.GradientTape() as tape:
+        tape.watch(interpolated_images)
+        preds = model(interpolated_images)
+        probs = preds[:, 0]
+        
+    grads = tape.gradient(probs, interpolated_images)
+    avg_grads = tf.reduce_mean(grads[:-1], axis=0) # Shape: (2000, 1)
+    
+    # Multiply by (inputs - baseline)
+    integrated_gradients = tf.squeeze(X - baseline) * tf.squeeze(avg_grads)
+    
+    # Use absolute attributions for the heatmap
+    heatmap = tf.abs(integrated_gradients)
+    
+    max_heat = tf.math.reduce_max(heatmap)
+    if max_heat > 0:
+        heatmap /= max_heat
+        
+    return heatmap.numpy().tolist()
+
+def compute_shap(model, X_scaled):
+    """Computes SHAP values using GradientExplainer."""
+    X = X_scaled.reshape((1, 2000, 1))
+    # Background: flat light curves. We provide a small batch of baseline zeroes.
+    background = np.zeros((10, 2000, 1)) 
+    
+    explainer = shap.GradientExplainer(model, background)
+    shap_values = explainer.shap_values(X)
+    
+    # Extract the values for the positive class
+    if isinstance(shap_values, list):
+        shap_vals = shap_values[0]
+    else:
+        shap_vals = shap_values
+        
+    heatmap = np.abs(np.squeeze(shap_vals))
+    max_heat = np.max(heatmap)
+    if max_heat > 0:
+        heatmap /= max_heat
+        
+    return heatmap.tolist()
+
 def run_ablation(model, X_base, heatmap, original_prediction):
     """Performs perturbation analysis on specific light curve regions."""
     results = []
