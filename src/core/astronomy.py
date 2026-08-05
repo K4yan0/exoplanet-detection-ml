@@ -4,16 +4,24 @@ import lightkurve as lk
 
 def get_folded_lightcurve(star_id):
     """Fetches TESS data, runs BLS, and returns folded light curve metrics."""
+    # Fetch up to 5 sectors to prevent massive API timeouts on the frontend,
+    # but still give us ~135 days of baseline data.
     search_result = lk.search_lightcurve(star_id, mission='TESS', author='SPOC')
     if len(search_result) == 0:
         return {'success': False, 'error': f'No SPOC data found for {star_id}. Try a different star!'}
         
-    lc = search_result[0].download()
-    if lc is None:
+    lc_collection = search_result[:5].download_all()
+    if lc_collection is None or len(lc_collection) == 0:
         return {'success': False, 'error': 'Download failed from NASA MAST.'}
         
+    lc = lc_collection.stitch()
     flattened_lc = lc.flatten(window_length=101)
-    periodogram = flattened_lc.to_periodogram(method='bls', period=np.linspace(1, 20, 100000))
+    
+    # Dynamically calculate the maximum searchable period based on the observation baseline
+    time_span = float(lc.time[-1].value - lc.time[0].value)
+    max_period = max(10.0, min(time_span / 2, 100.0))
+    
+    periodogram = flattened_lc.to_periodogram(method='bls', period=np.linspace(1, max_period, 100000))
     best_period = periodogram.period_at_max_power
     best_epoch = periodogram.transit_time_at_max_power
     
