@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 # Import our new modular core
 from src.core.astronomy import get_folded_lightcurve
 from src.core.inference import normalize_flux, predict_planet
-from src.core.xai import compute_gradcam, run_ablation
+from src.core.xai import compute_gradcam, compute_integrated_gradients, compute_shap, run_ablation
 
 app = Flask(__name__)
 
@@ -41,13 +41,17 @@ def analyze_star(star_id):
         prediction = 0.0
         upsampled_heatmap_conv1 = [0.0] * 2000
         upsampled_heatmap_conv3 = [0.0] * 2000
+        heatmap_ig = [0.0] * 2000
+        heatmap_shap = [0.0] * 2000
     else:
         # 3. Predict
         prediction = predict_planet(model, X_scaled)
         
-        # 4. XAI (Grad-CAM)
+        # 4. XAI Consensus (Grad-CAM, IG, SHAP)
         upsampled_heatmap_conv1 = compute_gradcam(model, X_scaled, 'conv1d', prediction)
         upsampled_heatmap_conv3 = compute_gradcam(model, X_scaled, 'conv1d_2', prediction)
+        heatmap_ig = compute_integrated_gradients(model, X_scaled)
+        heatmap_shap = compute_shap(model, X_scaled)
         
     flux_data = X_scaled[0].flatten().tolist()
     
@@ -60,6 +64,8 @@ def analyze_star(star_id):
         'flux_data': flux_data,
         'heatmap_conv1': upsampled_heatmap_conv1,
         'heatmap_conv3': upsampled_heatmap_conv3,
+        'heatmap_ig': heatmap_ig,
+        'heatmap_shap': heatmap_shap,
         'star_id': star_id,
         'veto': veto_triggered
     }
