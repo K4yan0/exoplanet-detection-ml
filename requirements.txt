@@ -9,6 +9,7 @@ scikit-learn
 
 # --- Deep Learning (Partie B) ---
 tensorflow
+shap
 
 # --- Notebook Environment ---
 jupyter
