@@ -30,8 +30,23 @@ We have built an interactive ablation engine into our Flask Web Application (`ap
 ### Hypothesis 4: Explainability Consensus (SHAP & IG)
 * **Test:** To prove that our Grad-CAM results are not algorithmic artifacts, we must achieve "XAI Consensus" using distinct mathematical attribution methods: **SHAP (Game Theory)** and **Integrated Gradients (Pixel Attribution)**.
 * **Experimental Result (TIC 261136679):** 
-  * The **SHAP** highlighted mask caused a **-69.76%** confidence drop (from ~99% down to 29.83%).
-  * The **Integrated Gradients** mask caused a **-67.43%** confidence drop (from ~99% down to 32.16%).
+
+**SHAP Ablation Results:**
+| Masked Region | New Confidence | Confidence Drop |
+| :--- | :--- | :--- |
+| Transit Region (Physics) | 26.95% | -72.63% |
+| XAI Highlighted Region | 29.83% | -69.76% |
+| Pre-Transit (Baseline) | 99.64% | +0.05% |
+| Random Background | 99.63% | +0.04% |
+
+**Integrated Gradients (IG) Ablation Results:**
+| Masked Region | New Confidence | Confidence Drop |
+| :--- | :--- | :--- |
+| Transit Region (Physics) | 26.95% | -72.63% |
+| XAI Highlighted Region | 32.16% | -67.43% |
+| Pre-Transit (Baseline) | 99.64% | +0.05% |
+| Random Background | 99.60% | +0.01% |
+
 * **Conclusion:** Both algorithms almost perfectly match the physical manual Transit Region mask (-72.63% drop). This robust consensus proves beyond a doubt that the model genuinely relies on the exact astrophysical shape of the transit.
 
 ---
