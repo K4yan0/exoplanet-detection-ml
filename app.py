@@ -83,7 +83,8 @@ def analyze_star(star_id):
             def compute_gradcam(layer_name):
                 feature_extractor = tf.keras.Model(model.inputs, model.get_layer(layer_name).output)
                 with tf.GradientTape() as tape:
-                    conv_outputs = feature_extractor(X)
+                    # Pass X as a dictionary to match Keras 3 functional API expectations and silence the warning
+                    conv_outputs = feature_extractor({"input_layer": X})
                     tape.watch(conv_outputs)
                     
                     x_layer = conv_outputs
@@ -136,6 +137,54 @@ def predict():
         return jsonify({'error': res.get('error')})
     return jsonify(res)
 
+@app.route('/ablation', methods=['POST'])
+def ablation():
+    try:
+        data = request.get_json()
+        flux_data = data.get('flux_data')
+        heatmap = data.get('heatmap')
+        original_prediction = data.get('original_prediction')
+        
+        if not flux_data or not heatmap or original_prediction is None:
+            return jsonify({'success': False, 'error': 'Missing required data for ablation.'})
+
+        # Reconstruct the scaled input
+        X_base = np.array(flux_data).reshape((1, 2000, 1))
+        
+        results = []
+        
+        def run_mask(name, indices):
+            X_masked = X_base.copy()
+            # Set masked points to 0.0 (the median baseline in our Z-score normalized data)
+            X_masked[0, indices, 0] = 0.0
+            new_pred = float(model.predict(X_masked, verbose=0)[0][0])
+            confidence_drop = original_prediction - new_pred
+            results.append({
+                'name': name,
+                'new_prediction': new_pred,
+                'confidence_drop': confidence_drop
+            })
+
+        # 1. Mask Transit (Centered at 1000 in our 2000-point folded array, mask 900 to 1100)
+        run_mask('Transit Region (Physics)', np.arange(900, 1100))
+        
+        # 2. Mask Highlighted (Top 30% hottest XAI points)
+        threshold = np.percentile(heatmap, 70)
+        highlighted_indices = np.where(np.array(heatmap) >= threshold)[0]
+        run_mask('XAI Highlighted Region', highlighted_indices)
+        
+        # 3. Mask Pre-Transit (Baseline check, 300 to 500)
+        run_mask('Pre-Transit (Baseline)', np.arange(300, 500))
+        
+        # 4. Mask Random Region (200 points)
+        random_start = np.random.randint(0, 700) # Ensure it doesn't overlap with transit
+        run_mask('Random Background', np.arange(random_start, random_start + 200))
+
+        return jsonify({'success': True, 'results': results})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/discovery')
 def discovery():
     return render_template('discovery.html')
@@ -169,4 +218,4 @@ def batch_status(job_id):
     return jsonify(job)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)
