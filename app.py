@@ -42,13 +42,14 @@ def analyze_star(star_id):
     
     if veto_triggered:
         prediction = 0.0
+        uncertainty = 0.0
         upsampled_heatmap_conv1 = [0.0] * 2000
         upsampled_heatmap_conv3 = [0.0] * 2000
         heatmap_ig = [0.0] * 2000
         heatmap_shap = [0.0] * 2000
     else:
-        # 3. Predict
-        prediction = predict_planet(model, X_scaled)
+        # 3. Predict (with MC Dropout Uncertainty)
+        prediction, uncertainty = predict_planet(model, X_scaled)
         
         # 4. XAI Consensus (Grad-CAM, IG, SHAP)
         upsampled_heatmap_conv1 = compute_gradcam(model, X_scaled, 'conv1d', prediction)
@@ -61,6 +62,7 @@ def analyze_star(star_id):
     return {
         'success': True,
         'prediction': prediction,
+        'uncertainty': uncertainty,
         'period': astro_res['period'],
         'duration_hours': astro_res['duration_hours'],
         'depth_ppt': astro_res['depth_ppt'],

@@ -19,8 +19,17 @@ def normalize_flux(flux):
     
     return X_scaled, veto_triggered
 
-def predict_planet(model, X_scaled):
-    """Runs the 1D CNN model."""
+def predict_planet(model, X_scaled, n_iterations=50):
+    """Runs the 1D CNN model using Monte Carlo Dropout for uncertainty estimation."""
     X = X_scaled.reshape((1, 2000, 1))
-    prediction = float(model.predict(X, verbose=0)[0][0])
-    return prediction
+    
+    # Run multiple forward passes with Dropout enabled (training=True)
+    predictions = []
+    for _ in range(n_iterations):
+        pred = model(X, training=True)
+        predictions.append(float(pred[0][0]))
+        
+    mean_prediction = float(np.mean(predictions))
+    uncertainty = float(np.std(predictions))
+    
+    return mean_prediction, uncertainty

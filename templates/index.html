@@ -375,23 +375,20 @@
                     badge.style.color = 'var(--accent)';
                     badge.style.borderColor = 'var(--accent)';
                     badge.style.backgroundColor = 'rgba(0, 255, 204, 0.1)';
-                    confValue.innerText = (data.prediction * 100).toFixed(2) + '%';
-                    document.getElementById('confidenceValue').innerText = (data.prediction * 100).toFixed(2) + '%';
-                    document.getElementById('confidenceValue').style.color = 'var(--accent)';
+                    const predPct = (data.prediction * 100).toFixed(2);
+                    const uncertPct = (data.uncertainty * 100).toFixed(2);
+                    confValue.innerHTML = `${predPct}% <span style="font-size: 1rem; color: var(--text-muted);">± ${uncertPct}%</span>`;
+                    confValue.style.color = 'var(--accent)';
                 } else {
                     badge.className = 'status-badge status-noise';
                     badge.innerText = '❌ NO PLANET (NOISE)';
                     badge.style.color = 'var(--danger)';
                     badge.style.borderColor = 'var(--danger)';
                     badge.style.backgroundColor = 'rgba(255, 51, 102, 0.1)';
-                    document.getElementById('confidenceValue').innerText = ((1 - data.prediction) * 100).toFixed(2) + '%';
-                    document.getElementById('confidenceValue').style.color = 'var(--danger)';
-                }
-                
-                if(data.prediction > 0.5) {
-                    document.getElementById('confidenceValue').style.color = 'var(--accent)';
-                } else {
-                    document.getElementById('confidenceValue').style.color = 'var(--danger)';
+                    const predPct = ((1 - data.prediction) * 100).toFixed(2);
+                    const uncertPct = (data.uncertainty * 100).toFixed(2);
+                    confValue.innerHTML = `${predPct}% <span style="font-size: 1rem; color: var(--text-muted);">± ${uncertPct}%</span>`;
+                    confValue.style.color = 'var(--danger)';
                 }
 
                 document.getElementById('periodValue').innerText = data.period.toFixed(4) + ' Days';
