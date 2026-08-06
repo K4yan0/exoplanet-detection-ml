@@ -21,7 +21,14 @@ def get_folded_lightcurve(star_id):
     time_span = float(lc.time[-1].value - lc.time[0].value)
     max_period = max(10.0, min(time_span / 2, 100.0))
     
-    periodogram = flattened_lc.to_periodogram(method='bls', period=np.linspace(1, max_period, 100000))
+    # Use minimum and maximum period kwargs to let lightkurve calculate the optimal grid
+    # frequency_factor controls grid density. 5 is a safe, fast balance for multi-sector data.
+    periodogram = flattened_lc.to_periodogram(
+        method='bls', 
+        minimum_period=1.0, 
+        maximum_period=max_period, 
+        frequency_factor=5
+    )
     best_period = periodogram.period_at_max_power
     best_epoch = periodogram.transit_time_at_max_power
     
@@ -32,11 +39,17 @@ def get_folded_lightcurve(star_id):
     binned_lc = folded_lc.bin(bins=2000)
     
     flux = binned_lc.flux.value
+    
+    # Fill any NaNs created by binning
     if np.isnan(flux).any():
         flux = pd.Series(flux).interpolate(limit_direction='both').values
         
-    if len(flux) != 2000 or np.isnan(flux).any():
-        return {'success': False, 'error': 'Could not extract a clean 2000-point array.'}
+    # If lightkurve dropped empty bins, force it to exactly 2000 points via interpolation
+    if len(flux) != 2000:
+        from scipy.interpolate import interp1d
+        x_old = np.linspace(0, 1, len(flux))
+        x_new = np.linspace(0, 1, 2000)
+        flux = interp1d(x_old, flux, kind='linear', fill_value='extrapolate')(x_new)
         
     return {
         'success': True,
