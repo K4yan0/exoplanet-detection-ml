@@ -14,21 +14,33 @@ def get_folded_lightcurve(star_id):
     if lc_collection is None or len(lc_collection) == 0:
         return {'success': False, 'error': 'Download failed from NASA MAST.'}
         
-    lc = lc_collection.stitch()
-    flattened_lc = lc.flatten(window_length=101)
+    # Drop corrupted sectors with negative background flux to prevent inversion during stitch()
+    clean_lcs = [l for l in lc_collection if np.nanmedian(l.flux.value) > 0]
+    if len(clean_lcs) == 0:
+        return {'success': False, 'error': 'All downloaded sectors had corrupted negative flux.'}
+        
+    lc = lk.LightCurveCollection(clean_lcs).stitch()
+    # Clean the data by removing outliers before flattening
+    lc = lc.remove_nans().remove_outliers(sigma_upper=4, sigma_lower=4)
+    
+    # CRITIQUE 3: Detrending (Stellar Variability)
+    # We use a Savitzky-Golay filter (flatten), but we MUST use a wide window (401 points = ~13 hours)
+    # If we use the default 101, it will erase 4-hour transits entirely!
+    flattened_lc = lc.flatten(window_length=401)
     
     # Dynamically calculate the maximum searchable period based on the observation baseline
     time_span = float(lc.time[-1].value - lc.time[0].value)
-    max_period = max(10.0, min(time_span / 2, 100.0))
+    max_period = max(10.0, min(time_span / 2, 60.0)) # Cap at 60 days to ensure safety
     
-    # Use minimum and maximum period kwargs to let lightkurve calculate the optimal grid
-    # frequency_factor controls grid density. 5 is a safe, fast balance for multi-sector data.
+    # We EXPLICITLY pass a period grid (20,000 points) and a duration grid (5 points).
+    # Total combinations = 100,000. This completely bypasses the flawed astropy `autoperiod` 
+    # math that accidentally spawned 14 million points, ensuring calculation in < 2 seconds.
     periodogram = flattened_lc.to_periodogram(
         method='bls', 
-        minimum_period=1.0, 
-        maximum_period=max_period, 
-        frequency_factor=5
+        period=np.linspace(1, max_period, 20000),
+        duration=np.linspace(0.02, 0.2, 5) 
     )
+    
     best_period = periodogram.period_at_max_power
     best_epoch = periodogram.transit_time_at_max_power
     
