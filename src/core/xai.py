@@ -4,31 +4,58 @@ import tensorflow as tf
 def compute_gradcam(model, X_scaled, layer_name, prediction):
     """Computes 1D Grad-CAM for a given layer."""
     X = X_scaled.reshape((1, 2000, 1))
-    feature_extractor = tf.keras.Model(model.inputs, model.get_layer(layer_name).output)
+    X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
     
     with tf.GradientTape() as tape:
-        conv_outputs = feature_extractor({"input_layer": X})
-        tape.watch(conv_outputs)
+        tape.watch(X_tensor)
         
-        x_layer = conv_outputs
-        layer_names = [layer.name for layer in model.layers]
-        start_idx = layer_names.index(layer_name) + 1
-        for layer in model.layers[start_idx:]:
-            x_layer = layer(x_layer)
+        x_layer = X_tensor
+        conv_output = None
+        
+        # Sequentially pass the data through the layers to maintain the Gradient graph
+        for layer in model.layers:
+            # Check if this layer is a Dropout layer; we should disable it during inference
+            if "dropout" in layer.name.lower():
+                x_layer = layer(x_layer, training=False)
+            elif layer == model.layers[-1]:
+                # Bypass the final layer's sigmoid activation to prevent vanishing gradients
+                x_layer = tf.matmul(x_layer, layer.kernel)
+                if layer.bias is not None:
+                    x_layer = x_layer + layer.bias
+            else:
+                x_layer = layer(x_layer)
+                
+            if layer.name == layer_name:
+                conv_output = x_layer
+                tape.watch(conv_output)
+                
         preds = x_layer
+        # Target the predicted class
         loss = preds[:, 0] if prediction > 0.5 else 1.0 - preds[:, 0]
         
-    grads = tape.gradient(loss, conv_outputs)
+    grads = tape.gradient(loss, conv_output)
+    
+    # If gradients are vanishing, default to zeros
+    if grads is None:
+        return [0.0] * 2000
+        
     pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
-    heatmap = conv_outputs[0] @ pooled_grads[..., tf.newaxis]
-    heatmap = tf.squeeze(heatmap)
-    heatmap = tf.maximum(heatmap, 0)
+    
+    # Weight the channels by the pooled gradients
+    heatmap = tf.reduce_sum(tf.multiply(conv_output[0], pooled_grads), axis=-1)
+    
+    # Apply ReLU
+    heatmap = tf.maximum(heatmap, 0.0)
     
     max_heat = tf.math.reduce_max(heatmap)
     if max_heat > 0:
         heatmap /= max_heat
         
     heatmap = heatmap.numpy()
+    
+    if len(heatmap) == 0:
+        return [0.0] * 2000
+        
     original_x = np.linspace(0, 1, 2000)
     heatmap_x = np.linspace(0, 1, len(heatmap))
     upsampled_heatmap = np.interp(original_x, heatmap_x, heatmap).tolist()
