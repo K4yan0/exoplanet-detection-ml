@@ -369,26 +369,39 @@
                     badge.style.backgroundColor = 'rgba(251, 191, 36, 0.1)';
                     confValue.innerText = 'VETO';
                     confValue.style.color = '#fbbf24';
-                } else if (data.prediction > 0.5) {
-                    badge.className = 'status-badge status-planet';
-                    badge.innerText = '🌟 PLANET DETECTED';
-                    badge.style.color = 'var(--accent)';
-                    badge.style.borderColor = 'var(--accent)';
-                    badge.style.backgroundColor = 'rgba(0, 255, 204, 0.1)';
-                    const predPct = (data.prediction * 100).toFixed(2);
-                    const uncertPct = (data.uncertainty * 100).toFixed(2);
-                    confValue.innerHTML = `${predPct}% <span style="font-size: 1rem; color: var(--text-muted);">± ${uncertPct}%</span>`;
-                    confValue.style.color = 'var(--accent)';
                 } else {
-                    badge.className = 'status-badge status-noise';
-                    badge.innerText = '❌ NO PLANET (NOISE)';
-                    badge.style.color = 'var(--danger)';
-                    badge.style.borderColor = 'var(--danger)';
-                    badge.style.backgroundColor = 'rgba(255, 51, 102, 0.1)';
-                    const predPct = ((1 - data.prediction) * 100).toFixed(2);
-                    const uncertPct = (data.uncertainty * 100).toFixed(2);
-                    confValue.innerHTML = `${predPct}% <span style="font-size: 1rem; color: var(--text-muted);">± ${uncertPct}%</span>`;
-                    confValue.style.color = 'var(--danger)';
+                    const probs = data.prediction;
+                    const uncerts = data.uncertainty;
+                    const maxProb = Math.max(...probs);
+                    const classIdx = probs.indexOf(maxProb);
+                    
+                    const probPct = (maxProb * 100).toFixed(2);
+                    const uncertPct = (uncerts[classIdx] * 100).toFixed(2);
+                    const confHtml = `${probPct}% <span style="font-size: 1rem; color: var(--text-muted);">± ${uncertPct}%</span>`;
+
+                    if (classIdx === 1) {
+                        badge.className = 'status-badge status-planet';
+                        badge.innerText = '🌟 PLANET DETECTED';
+                        badge.style.color = 'var(--accent)';
+                        badge.style.borderColor = 'var(--accent)';
+                        badge.style.backgroundColor = 'rgba(0, 255, 204, 0.1)';
+                        confValue.style.color = 'var(--accent)';
+                    } else if (classIdx === 2) {
+                        badge.className = 'status-badge status-noise';
+                        badge.innerText = '🔥 ECLIPSING BINARY';
+                        badge.style.color = '#ff9900';
+                        badge.style.borderColor = '#ff9900';
+                        badge.style.backgroundColor = 'rgba(255, 153, 0, 0.1)';
+                        confValue.style.color = '#ff9900';
+                    } else {
+                        badge.className = 'status-badge status-noise';
+                        badge.innerText = '❌ NO PLANET (NOISE)';
+                        badge.style.color = 'var(--danger)';
+                        badge.style.borderColor = 'var(--danger)';
+                        badge.style.backgroundColor = 'rgba(255, 51, 102, 0.1)';
+                        confValue.style.color = 'var(--danger)';
+                    }
+                    confValue.innerHTML = confHtml;
                 }
 
                 document.getElementById('periodValue').innerText = data.period.toFixed(4) + ' Days';
@@ -497,7 +510,8 @@
                     body: JSON.stringify({
                         flux_data: window.currentData.flux_data,
                         heatmap: selectedHeatmap,
-                        original_prediction: window.currentData.prediction
+                        original_prediction: Math.max(...window.currentData.prediction),
+                        target_class: window.currentData.prediction.indexOf(Math.max(...window.currentData.prediction))
                     })
                 });
                 

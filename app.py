@@ -14,7 +14,7 @@ from src.core.xai import compute_gradcam, compute_integrated_gradients, compute_
 app = Flask(__name__)
 
 # Load model globally
-MODEL_PATH = os.path.join('data', 'models', 'exoplanet_cnn_v1.keras')
+MODEL_PATH = os.path.join('data', 'models', 'exoplanet_cnn_v2_ternary.keras')
 print("Loading model...")
 model = load_model(MODEL_PATH)
 print("Model loaded.")
@@ -41,21 +41,24 @@ def analyze_star(star_id):
     X_scaled, veto_triggered = normalize_flux(flux)
     
     if veto_triggered:
-        prediction = 0.0
-        uncertainty = 0.0
+        prediction = [1.0, 0.0, 0.0]
+        uncertainty = [0.0, 0.0, 0.0]
         upsampled_heatmap_conv1 = [0.0] * 2000
         upsampled_heatmap_conv3 = [0.0] * 2000
         heatmap_ig = [0.0] * 2000
         heatmap_shap = [0.0] * 2000
     else:
-        # 3. Predict (with MC Dropout Uncertainty)
+        # 3. Predict (with MC Dropout Uncertainty) returns arrays of shape (3,)
         prediction, uncertainty = predict_planet(model, X_scaled)
         
+        # Target the most likely class for XAI explanation
+        target_class = int(np.argmax(prediction))
+        
         # 4. XAI Consensus (Grad-CAM, IG, SHAP)
-        upsampled_heatmap_conv1 = compute_gradcam(model, X_scaled, 'conv1d', prediction)
-        upsampled_heatmap_conv3 = compute_gradcam(model, X_scaled, 'conv1d_2', prediction)
-        heatmap_ig = compute_integrated_gradients(model, X_scaled)
-        heatmap_shap = compute_shap(model, X_scaled)
+        upsampled_heatmap_conv1 = compute_gradcam(model, X_scaled, 'conv1d', target_class)
+        upsampled_heatmap_conv3 = compute_gradcam(model, X_scaled, 'conv1d_2', target_class)
+        heatmap_ig = compute_integrated_gradients(model, X_scaled, 50, target_class)
+        heatmap_shap = compute_shap(model, X_scaled, target_class)
         
     flux_data = X_scaled[0].flatten().tolist()
     
@@ -101,12 +104,13 @@ def ablation():
         flux_data = data.get('flux_data')
         heatmap = data.get('heatmap')
         original_prediction = data.get('original_prediction')
+        target_class = data.get('target_class', 1)
         
         if not flux_data or not heatmap or original_prediction is None:
             return jsonify({'success': False, 'error': 'Missing required data for ablation.'})
 
         X_base = np.array(flux_data).reshape((1, 2000, 1))
-        results = run_ablation(model, X_base, heatmap, original_prediction)
+        results = run_ablation(model, X_base, heatmap, target_class, original_prediction)
         
         return jsonify({'success': True, 'results': results})
 
