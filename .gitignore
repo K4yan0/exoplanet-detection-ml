@@ -26,4 +26,7 @@ logs/
 __pycache__/
 *.pyc
 
+# tools folders
+.vscode/
 graphify-out/
+scratch/

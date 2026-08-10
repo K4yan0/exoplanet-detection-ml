@@ -30,26 +30,26 @@ def create_1d_cnn(input_length):
         
         Dense(64, activation='relu'),
         Dropout(0.3),
-        Dense(1, activation='sigmoid')
+        Dense(3, activation='softmax') # 3 Classes: 0=Noise, 1=Planet, 2=EB
     ])
     
     model.compile(
-        optimizer='adam', # Reverted back to default 0.001
-        loss='binary_crossentropy',
+        optimizer='adam', 
+        loss='sparse_categorical_crossentropy', # Changed from binary
         metrics=['accuracy']
     )
     
     return model
 
 def main():
-    # 1. Load the MASSIVE dataset
-    dataset_path = os.path.join('data', 'tess_ml_arrays', 'tess_dataset_full.npz')
+    # 1. Load the TERNARY dataset
+    dataset_path = os.path.join('data', 'tess_ml_arrays', 'tess_dataset_ternary.npz')
     
     if not os.path.exists(dataset_path):
         print(f"Error: Could not find dataset at {dataset_path}")
         return
 
-    print(f"Loading full dataset from {dataset_path}...")
+    print(f"Loading Ternary dataset from {dataset_path}...")
     data = np.load(dataset_path)
     X_raw = data['X']
     Y = data['y']
@@ -59,21 +59,13 @@ def main():
     sequence_length = X_raw.shape[1]
     
     # CRITICAL FIX 2: Sanitize Data
-    # Some sneaky NaNs or Infs (infinite values) must have survived the interpolation in build_dataset.py.
-    # If even a single NaN enters the network, the gradients explode and loss becomes 'nan'.
     X_raw = np.nan_to_num(X_raw, nan=1.0, posinf=1.0, neginf=1.0)
     
     # CRITICAL FIX: Z-Score Normalization
-    # The transit dips are tiny (e.g., a drop to 0.998). We need to standardize every single 
-    # light curve to have a mean of 0 and a standard deviation of 1.
     mean = np.mean(X_raw, axis=1, keepdims=True)
     std = np.std(X_raw, axis=1, keepdims=True)
     X_scaled = (X_raw - mean) / (std + 1e-8)
-    
-    # One more safety net just in case standard deviation was completely 0
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
-    
-    # REMOVED np.clip: The model was using the artificial flat bottom at -3.0 as a cheat code!
     
     X = X_scaled.reshape((num_samples, sequence_length, 1))
     
@@ -81,7 +73,6 @@ def main():
     print(f"Total Labels Shape: {Y.shape}")
     
     # 3. Split into Training and Validation Sets (80% Train, 20% Test)
-    # We use 'stratify=Y' to ensure the 50/50 ratio of Planets/Non-Planets is maintained in both sets.
     print("\nSplitting data into 80% Training and 20% Validation...")
     X_train, X_val, y_train, y_val = train_test_split(
         X, Y, test_size=0.2, random_state=42, stratify=Y
@@ -95,7 +86,6 @@ def main():
     model = create_1d_cnn(input_length=sequence_length)
     
     # 5. Define Early Stopping 
-    # This automatically stops training if the model stops learning, preventing it from just memorizing the data.
     early_stop = EarlyStopping(
         monitor='val_loss',
         patience=5,
@@ -108,8 +98,8 @@ def main():
     history = model.fit(
         X_train, y_train,
         validation_data=(X_val, y_val),
-        epochs=30,          # Increased for real training
-        batch_size=32,      # Standard batch size for 1300+ samples
+        epochs=30,
+        batch_size=32,
         callbacks=[early_stop],
         verbose=1
     )
@@ -123,9 +113,9 @@ def main():
     # 8. Save the trained model
     save_dir = os.path.join('data', 'models')
     os.makedirs(save_dir, exist_ok=True)
-    model_path = os.path.join(save_dir, 'exoplanet_cnn_v1.keras')
+    model_path = os.path.join(save_dir, 'exoplanet_cnn_v2_ternary.keras')
     model.save(model_path)
-    print(f"\n[SUCCESS] Model successfully saved to {model_path}")
+    print(f"\n[SUCCESS] Ternary Model successfully saved to {model_path}")
 
 if __name__ == '__main__':
     main()

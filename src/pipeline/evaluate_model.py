@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, roc_curve, auc
+from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
@@ -119,6 +119,9 @@ def main():
     print("Running Predictions...")
     y_pred_probs = model.predict(X_val)
     y_pred_classes = (y_pred_probs > 0.5).astype(int).flatten()
+    
+    print("\n--- CLASSIFICATION REPORT (Precision, Recall, F1-Score) ---")
+    print(classification_report(y_val, y_pred_classes, target_names=['Noise (0)', 'Planet (1)']))
     
     print("\nGenerating Confusion Matrix -> assets/confusion_matrix.png")
     plot_confusion_matrix(y_val, y_pred_classes)

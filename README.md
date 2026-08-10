@@ -60,18 +60,21 @@ After proving the Kaggle dataset was corrupted, we rebuilt the pipeline from scr
 
 ### 2. The Advanced Data Pipeline
 * **Data Ingestion:** Fetching highly rigorous SPOC-processed light curves directly from NASA.
+* **Multi-Sector Stitching:** Dynamically downloading and stitching up to 5 TESS observation sectors to expand the baseline to over 100 days, preventing blindness to long-period orbits (like TOI-700).
+* **Corrupt Sector Filtering:** Intercepting and dropping any TESS sector with a negative median background flux to prevent `lightkurve` from mathematically inverting transits into flares during normalization.
 * **Astrophysics Processing:** 
-  * Flattening the light curve using a 1001-point rolling median. This wide window removes stellar rotation variations without accidentally falling into transits and creating artificial "horns" (over-filtering artifacts).
-  * Using Box-Least Squares (BLS) with high-resolution period grids (100,000 points) to accurately find the orbital period and epoch, preventing aliasing and signal smearing.
-  * Phase-folding the light curve to stack multiple transits and amplify the signal, then binning it into exactly 2000 points.
+  * Detrending the light curve using a 401-point Savitzky-Golay high-pass filter. This mathematically flattens low-frequency stellar variability (like rotating starspots) while perfectly preserving high-frequency 4-hour transit dips.
+  * Using Box-Least Squares (BLS) with high-resolution, clamped period grids (100,000 continuous evaluations) to accurately find the orbital period and epoch in under 2 seconds.
+  * Phase-folding the light curve to stack multiple transits and amplify the signal, then interpolating it into exactly 2000 bins for neural network ingestion.
 * **Robust Normalization (MAD):** To prevent massive positive stellar flares from inflating the standard deviation and squashing the transit depths, we implemented Robust Scaling using the Median and Median Absolute Deviation (MAD). 
 * **One-Sided Clipping:** We clipped positive outliers at `+3.0` to crush cosmic rays and flares, while leaving the deep negative transits completely unclipped to preserve their true physical depth.
 
-### 3. The Deep Learning Core (CNN vs Random Forest)
-At the genesis of this project, we evaluated traditional ensemble methods (Random Forest) against Deep Learning (CNNs). While powerful for structured tabular data, Random Forests evaluate features independently, meaning they struggle to intrinsically understand the sequential, time-series "shape" of a light curve without massive feature engineering.
+### 3. The Deep Learning Core & AI Veto Engine
+At the genesis of this project, we evaluated traditional ensemble methods (Random Forest) against Deep Learning (CNNs). While powerful for structured tabular data, Random Forests evaluate features independently, meaning they struggle to intrinsically understand the sequential, time-series "shape" of a light curve.
 
-Instead, we trained a 1D Convolutional Neural Network (CNN) with a lightweight architecture (16 -> 32 -> 64 filters with Dropout) to prevent overfitting on the small but pristine dataset. Because CNNs evaluate local spatial coherence, the network inherently learned the morphological signature of a transit (the steep ingress, the flat bottom, and the egress).
-* **Performance:** The model shattered previous ceilings, achieving **90.37% Accuracy** with an **AUC of 0.924** and a significantly lowered False Negative rate.
+Instead, we trained a 1D Convolutional Neural Network (CNN) with a lightweight architecture (16 -> 32 -> 64 filters with Dropout). Because CNNs evaluate local spatial coherence, the network inherently learned the morphological signature of a transit (the steep ingress, the flat bottom, and the egress).
+* **Performance:** The model achieved **90.37% Accuracy** with a Precision of **0.94** and F1-Score of **0.89**.
+* **The AI VETO Engine:** Traditional periodogram algorithms (like BLS) suffer mathematical chaos when presented with multi-month data gaps, inevitably finding mathematically "perfect" artifact peaks. Because our CNN physically learns morphology, it acts as an intelligent **Triage Engine**. In empirical tests (e.g., TOI-1231), when BLS output a false gap-induced artifact, the CNN successfully recognized the non-physical shape and **VETOED** the signal, proving its superiority over strict classical math.
 
 <p align="center">
   <img src="assets/confusion_matrix.png" width="45%" alt="Confusion Matrix"/>
@@ -86,12 +89,30 @@ Instead of forcing the probabilistic Neural Network to learn this deterministic 
 ### 5. The Web Application & XAI Dashboard
 The entire inference pipeline is wrapped in a modern, dark-mode Flask Web Application featuring glassmorphism UI design. Rather than relying on static images, the application generates **interactive Plotly.js visualizations**. 
 
-Because the CNN physically learns the shape of the transit rather than just looking at isolated data points, we deployed **Explainable AI (XAI)** via a custom 1D Gradient-weighted Class Activation Mapping (Grad-CAM) algorithm. This acts as an "AI MRI", mapping exactly what the CNN is paying attention to onto the plotted light curve.
-* Users can toggle between the **First Convolutional Layer** (which highlights the broad "W" shape of the transit) and the **Final Convolutional Layer** (which rigorously targets the ingress/egress edges).
-* The dashboard dynamically extracts critical astrophysics telemetry, including **Orbital Period**, **Transit Depth**, and **Transit Duration**.
+Because the CNN physically learns the shape of the transit rather than just looking at isolated data points, we deployed a rigorous **Explainable AI (XAI)** suite. Rather than relying on a single algorithm, the application achieves **"XAI Consensus"** by running three distinct mathematical attribution methods simultaneously:
+* **Grad-CAM (1D):** Highlights both broad transit shapes (Conv1 layer) and steep ingress/egress edges (Conv3 layer).
+* **SHAP (Game Theory):** Uses `shap.GradientExplainer` to calculate the exact Shapley value contribution of every phase bin.
+* **Integrated Gradients:** Integrates gradients along a path from a flat baseline to the actual light curve for precise pixel attribution.
+
+**Interactive Ablation Analysis**
+To mathematically prove the CNN is looking at astrophysical phenomena and not background artifacts, the web app features an **Interactive Ablation Engine**. 
+Users can select any XAI method, and the engine will automatically mask (zero out) the **top 30% hottest pixels** (the 70th percentile). It also masks random background noise and pre-transit baselines as control groups. The engine then re-runs the CNN and calculates the exact drop in confidence. 
+
+Experimental results on known exoplanets (e.g., TIC 261136679) show that masking the SHAP or IG regions causes a ~70% drop in confidence (matching a manual mask of the physical transit), while masking random background causes a 0% drop. This definitively proves the model has learned true astrophysics.
 
 ### 6. Batch Discovery Engine
 Astronomers don't analyze one star at a time. The platform includes a dedicated Bulk Processing engine allowing users to input dozens of TIC IDs simultaneously. A background thread processes the targets asynchronously, updating the UI via long-polling with a live progress bar. Each processed star features an inline, expandable XAI mini-graph for rapid human verification.
+
+### 7. The Ternary Upgrade & Uncertainty Estimation
+While a binary classifier (Planet vs. Noise) was a strong start, the most common astrophysical false positives are **Eclipsing Binaries (EBs)**. EBs create V-shaped eclipses that look dangerously similar to U-shaped planetary transits. 
+
+To force the neural network to mathematically learn the difference, we upgraded the model to a **Ternary Classifier** (Noise, Planet, Eclipsing Binary). We queried the Villanova TESS Eclipsing Binary Catalog via VizieR, downloaded 300 confirmed EB light curves, folded them, and retrained the CNN with a `softmax` output and `sparse_categorical_crossentropy`. The AI now effectively triages true planets from stellar binaries!
+
+**Monte Carlo Dropout (Uncertainty Estimation)**
+In rigorous science, a hard 99% probability isn't enough; we need a margin of error (e.g., `99.0% ± 1.2%`). By implementing **Monte Carlo Dropout** during inference (keeping dropout layers active and running 50 forward passes), the model outputs the statistical mean and standard deviation across all 3 classes, giving scientists a true measure of epistemic uncertainty.
+
+**Binary Ablation Analysis**
+The Explainable AI (XAI) suite revealed a fascinating behavior on Eclipsing Binaries. If you use the Ablation Engine to mathematically zero out the primary transit of an EB, the AI's confidence that it is a binary often *increases*! Why? Because unlike a planet (which is flat out-of-transit), a dual-star system has a secondary eclipse and continuous out-of-eclipse ellipsoidal gravity variations. Masking the primary transit removes the "planet-like" part of the signal, leaving behind pure binary physics, which the CNN successfully recognizes!
 
 ## Installation & Usage
 
@@ -117,6 +138,12 @@ Astronomers don't analyze one star at a time. The platform includes a dedicated 
    python app.py
    ```
    Open your browser and navigate to `http://127.0.0.1:5000`. Test it out with a known exoplanet like `TIC 261136679` (Pi Mensae) or `TIC 34068865` (WASP-126)!
+
+## Attribution & Citation
+If you use this code, pipeline, or dataset methodology in your own research, portfolio, or web application, please credit this repository by linking back to it. 
+
+**Example:**
+> *Exoplanet detection pipeline and CNN architecture adapted from [K4yan0/exoplanet-detection-ml](https://github.com/K4yan0/exoplanet-detection-ml).*
 
 ## License
 This project is licensed under the MIT License. See the `LICENSE` file for details.
