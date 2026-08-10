@@ -33,12 +33,14 @@ def get_folded_lightcurve(star_id):
     max_period = max(10.0, min(time_span / 2, 60.0)) # Cap at 60 days to ensure safety
     
     # We EXPLICITLY pass a period grid (20,000 points) and a duration grid (5 points).
-    # Total combinations = 100,000. This completely bypasses the flawed astropy `autoperiod` 
-    # math that accidentally spawned 14 million points, ensuring calculation in < 2 seconds.
+    # Total combinations = 100,000. We also pass a massive frequency_factor (500) to 
+    # bypass a bug in lightkurve that accidentally evaluates autopower limits even 
+    # when an explicit period array is provided!
     periodogram = flattened_lc.to_periodogram(
         method='bls', 
         period=np.linspace(1, max_period, 20000),
-        duration=np.linspace(0.02, 0.2, 5) 
+        duration=np.linspace(0.02, 0.2, 5),
+        frequency_factor=500
     )
     
     best_period = periodogram.period_at_max_power
