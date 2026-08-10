@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-def compute_gradcam(model, X_scaled, layer_name, prediction):
+def compute_gradcam(model, X_scaled, layer_name, target_class=1):
     """Computes 1D Grad-CAM for a given layer."""
     X = X_scaled.reshape((1, 2000, 1))
     X_tensor = tf.convert_to_tensor(X, dtype=tf.float32)
@@ -31,7 +31,7 @@ def compute_gradcam(model, X_scaled, layer_name, prediction):
                 
         preds = x_layer
         # Target the predicted class
-        loss = preds[:, 0] if prediction > 0.5 else 1.0 - preds[:, 0]
+        loss = preds[:, target_class]
         
     grads = tape.gradient(loss, conv_output)
     
@@ -64,7 +64,7 @@ def compute_gradcam(model, X_scaled, layer_name, prediction):
 
 import shap
 
-def compute_integrated_gradients(model, X_scaled, m_steps=50):
+def compute_integrated_gradients(model, X_scaled, m_steps=50, target_class=1):
     """Computes Integrated Gradients attribution."""
     X = tf.cast(X_scaled.reshape((1, 2000, 1)), tf.float32)
     # Baseline is a flat light curve (0.0 due to Z-score normalization)
@@ -80,7 +80,7 @@ def compute_integrated_gradients(model, X_scaled, m_steps=50):
     with tf.GradientTape() as tape:
         tape.watch(interpolated_images)
         preds = model(interpolated_images)
-        probs = preds[:, 0]
+        probs = preds[:, target_class]
         
     grads = tape.gradient(probs, interpolated_images)
     avg_grads = tf.reduce_mean(grads[:-1], axis=0) # Shape: (2000, 1)
@@ -97,7 +97,7 @@ def compute_integrated_gradients(model, X_scaled, m_steps=50):
         
     return heatmap.numpy().tolist()
 
-def compute_shap(model, X_scaled):
+def compute_shap(model, X_scaled, target_class=1):
     """Computes SHAP values using GradientExplainer."""
     X = X_scaled.reshape((1, 2000, 1))
     # Background: flat light curves. We provide a small batch of baseline zeroes.
@@ -106,11 +106,11 @@ def compute_shap(model, X_scaled):
     explainer = shap.GradientExplainer(model, background)
     shap_values = explainer.shap_values(X)
     
-    # Extract the values for the positive class
+    # Extract the values for the targeted class
     if isinstance(shap_values, list):
-        shap_vals = shap_values[0]
+        shap_vals = shap_values[target_class]
     else:
-        shap_vals = shap_values
+        shap_vals = shap_values[..., target_class] if len(np.array(shap_values).shape) > 2 else shap_values
         
     heatmap = np.abs(np.squeeze(shap_vals))
     max_heat = np.max(heatmap)
@@ -119,14 +119,14 @@ def compute_shap(model, X_scaled):
         
     return heatmap.tolist()
 
-def run_ablation(model, X_base, heatmap, original_prediction):
+def run_ablation(model, X_base, heatmap, target_class, original_prediction):
     """Performs perturbation analysis on specific light curve regions."""
     results = []
     
     def run_mask(name, indices):
         X_masked = X_base.copy()
         X_masked[0, indices, 0] = 0.0
-        new_pred = float(model.predict(X_masked, verbose=0)[0][0])
+        new_pred = float(model.predict(X_masked, verbose=0)[0][target_class])
         confidence_drop = original_prediction - new_pred
         results.append({
             'name': name,
