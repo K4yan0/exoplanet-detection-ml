@@ -117,6 +117,57 @@ def ablation():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/technical')
+def technical():
+    return render_template('technical.html')
+
+@app.route('/api/full_report', methods=['POST'])
+def full_report():
+    data = request.get_json()
+    star_id = data.get('star_id', '')
+    res = analyze_star(star_id)
+    
+    if not res.get('success'):
+        return jsonify({'error': res.get('error')})
+        
+    if res.get('veto'):
+        res['ablation_matrix'] = {}
+        res['temperature'] = 1.0
+        return jsonify(res)
+        
+    # Read Calibration Data
+    temperature = 1.0
+    try:
+        import json
+        calib_path = os.path.join('data', 'models', 'calibration_params.json')
+        if os.path.exists(calib_path):
+            with open(calib_path, 'r') as f:
+                calib = json.load(f)
+                temperature = calib.get('temperature', 1.0)
+    except Exception as e:
+        pass
+    res['temperature'] = temperature
+
+    # Run Ablation on ALL 4 XAI Methods simultaneously
+    X_base = np.array(res['flux_data']).reshape((1, 2000, 1))
+    target_class = int(np.argmax(res['prediction']))
+    orig_pred = float(res['prediction'][target_class])
+    
+    heatmaps = {
+        'SHAP': res['heatmap_shap'],
+        'Integrated Gradients': res['heatmap_ig'],
+        'Grad-CAM (Conv1)': res['heatmap_conv1'],
+        'Grad-CAM (Conv3)': res['heatmap_conv3']
+    }
+    
+    ablation_matrix = {}
+    for name, hm in heatmaps.items():
+        if hm and len(hm) == 2000:
+            ablation_matrix[name] = run_ablation(model, X_base, hm, target_class, orig_pred)
+            
+    res['ablation_matrix'] = ablation_matrix
+    return jsonify(res)
+
 def process_batch(job_id, star_ids):
     BATCH_JOBS[job_id]['status'] = 'running'
     for i, star_id in enumerate(star_ids):

@@ -64,7 +64,7 @@ After proving the Kaggle dataset was corrupted, we rebuilt the pipeline from scr
 * **Multi-Sector Stitching:** Dynamically downloading and stitching up to 5 TESS observation sectors to expand the baseline to over 100 days, preventing blindness to long-period orbits (like TOI-700).
 * **Corrupt Sector Filtering:** Intercepting and dropping any TESS sector with a negative median background flux to prevent `lightkurve` from mathematically inverting transits into flares during normalization.
 * **Astrophysics Processing:** 
-  * Detrending the light curve using a 401-point Savitzky-Golay high-pass filter. This mathematically flattens low-frequency stellar variability (like rotating starspots) while perfectly preserving high-frequency 4-hour transit dips.
+  * Detrending the light curve using a 401-point Savitzky-Golay high-pass filter. This mathematically flattens low-frequency stellar variability (like rotating starspots) while largely preserving high-frequency 4-hour transit dips.
   * Using Box-Least Squares (BLS) with high-resolution, clamped period grids (100,000 continuous evaluations) to accurately find the orbital period and epoch in under 2 seconds.
   * Phase-folding the light curve to stack multiple transits and amplify the signal, then interpolating it into exactly 2000 bins for neural network ingestion.
 * **Robust Normalization (MAD):** To prevent massive positive stellar flares from inflating the standard deviation and squashing the transit depths, we implemented Robust Scaling using the Median and Median Absolute Deviation (MAD). 
@@ -99,7 +99,7 @@ Because the CNN physically learns the shape of the transit rather than just look
 To mathematically prove the CNN is looking at astrophysical phenomena and not background artifacts, the web app features an **Interactive Ablation Engine**. 
 Users can select any XAI method, and the engine will automatically mask (zero out) the **top 30% hottest pixels** (the 70th percentile). It also masks random background noise and pre-transit baselines as control groups. The engine then re-runs the CNN and calculates the exact drop in confidence. 
 
-Experimental results on known exoplanets (e.g., TIC 261136679) show that masking the SHAP or IG regions causes a ~70% drop in confidence (matching a manual mask of the physical transit), while masking random background causes a 0% drop. This definitively proves the model has learned true astrophysics.
+Experimental results on known exoplanets (e.g., TIC 261136679) show that masking the SHAP or IG regions causes a ~70% drop in confidence (matching a manual mask of the physical transit), while masking random background causes a 0% drop. This provides strong evidence that the model relies on the transit-associated regions rather than spurious background artifacts.
 
 ### 6. Batch Discovery Engine
 Astronomers don't analyze one star at a time. The platform includes a dedicated Bulk Processing engine allowing users to input dozens of TIC IDs simultaneously. A background thread processes the targets asynchronously, updating the UI via long-polling with a live progress bar. Each processed star features an inline, expandable XAI mini-graph for rapid human verification.
@@ -113,7 +113,7 @@ To force the neural network to mathematically learn the difference, we upgraded 
 In rigorous science, a hard 99% probability isn't enough; we need a margin of error (e.g., `99.0% ± 1.2%`). By implementing **Monte Carlo Dropout** during inference (keeping dropout layers active and running 50 forward passes), the model outputs the statistical mean and standard deviation across all 3 classes, giving scientists a true measure of epistemic uncertainty.
 
 **Model Calibration & Temperature Scaling**
-Neural networks are notorious for being overconfident. To ensure mathematical rigor, we calculated the **Expected Calibration Error (ECE)**. Our Ternary model natively achieved an incredibly low Uncalibrated ECE of just **2.35%**. To perfect it further, we mathematically calibrated the softmax logits using **Temperature Scaling** ($T=1.0853$). This mathematically guarantees that when the pipeline claims "90% confidence", it is statistically correct 9 out of 10 times.
+Neural networks are notorious for being overconfident. To ensure mathematical rigor, we calculated the **Expected Calibration Error (ECE)**. Our Ternary model natively achieved an incredibly low Uncalibrated ECE of just **2.35%**. To improve it further, we mathematically calibrated the softmax logits using **Temperature Scaling** ($T=1.0853$). This aligns the model so that when the pipeline claims "90% confidence", it is statistically much closer to being correct 9 out of 10 times.
 
 <p align="center">
   <img src="assets/reliability_diagram_ternary.png" width="80%" alt="Reliability Diagram"/>
