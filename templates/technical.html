@@ -238,6 +238,48 @@
         </div>
         <div id="error-msg" style="color: var(--noise); display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--noise);"></div>
 
+        <div id="transparency-panel" class="panel panel-transparency" style="display: none; margin-bottom: 1.5rem; grid-column: 1 / -1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                <h3 style="margin:0; border:none; padding:0;">Preprocessing Transparency Contract: TERNARY_V1</h3>
+                <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: var(--accent); border: 1px solid var(--accent);">FROZEN</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                <div class="metric">
+                    <div class="metric-label">Data Ingestion</div>
+                    <div class="metric-sub">Sectors: 1</div>
+                    <div class="metric-sub">Outlier Removal: OFF</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Signal Processing</div>
+                    <div class="metric-sub">Filter: Savitzky-Golay</div>
+                    <div class="metric-sub">Window Length: 101</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Tensor Dimensions</div>
+                    <div class="metric-sub">Phase Folded: True</div>
+                    <div class="metric-sub">Binning: 2000 points</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Mathematical Scaling</div>
+                    <div class="metric-sub" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Normalization: Z-Score</span>
+                        <a href="javascript:void(0)" onclick="document.getElementById('zscore-calc').style.display = document.getElementById('zscore-calc').style.display === 'none' ? 'block' : 'none';" style="color:var(--accent); font-size:0.8rem;">Show Calc</a>
+                    </div>
+                    <div class="metric-sub">Clipping: OFF</div>
+                </div>
+            </div>
+            
+            <div id="zscore-calc" style="display:none; margin-top:1rem; padding:1rem; background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid var(--panel-border);">
+                <div style="font-family: monospace; color: var(--accent); margin-bottom:0.5rem;">z = (x - μ) / σ</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; font-size:0.9rem;">
+                    <div><span style="color:var(--text-muted)">μ (Mean):</span> <span id="val-mean" style="color:white;">-</span></div>
+                    <div><span style="color:var(--text-muted)">σ (Std Dev):</span> <span id="val-std" style="color:white;">-</span></div>
+                    <div><span style="color:var(--text-muted)">Input x [0]:</span> <span id="val-x0" style="color:white;">-</span></div>
+                    <div><span style="color:var(--text-muted)">Output z [0]:</span> <span id="val-z0" style="color:white;">-</span></div>
+                </div>
+            </div>
+        </div>
+
         <div class="dashboard-grid" id="dashboard">
             <!-- Astronomical Profile -->
             <div class="panel panel-astro">
@@ -367,6 +409,20 @@
                     document.getElementById('error-msg').textContent = data.error;
                     document.getElementById('error-msg').style.display = 'block';
                     return;
+                }
+
+                // 0. Transparency Panel
+                document.getElementById('transparency-panel').style.display = 'block';
+                if (data.norm_metadata) {
+                    let mean = data.norm_metadata.mean;
+                    let std = data.norm_metadata.std;
+                    let z0 = data.flux_data[0];
+                    let x0 = (z0 * std) + mean;
+                    
+                    document.getElementById('val-mean').textContent = mean.toExponential(4);
+                    document.getElementById('val-std').textContent = std.toExponential(4);
+                    document.getElementById('val-x0').textContent = x0.toExponential(4);
+                    document.getElementById('val-z0').textContent = z0.toFixed(4);
                 }
 
                 // 1. Astro Profile

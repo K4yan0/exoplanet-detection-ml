@@ -10,7 +10,9 @@ def get_folded_lightcurve(star_id):
     if len(search_result) == 0:
         return {'success': False, 'error': f'No SPOC data found for {star_id}. Try a different star!'}
         
-    lc_collection = search_result[:5].download_all()
+    # FETCH ONLY 1 SECTOR to match training data assumptions.
+    # The experimental 5-sector pipeline is preserved for future V2 research.
+    lc_collection = search_result[0:1].download_all()
     if lc_collection is None or len(lc_collection) == 0:
         return {'success': False, 'error': 'Download failed from NASA MAST.'}
         
@@ -20,13 +22,11 @@ def get_folded_lightcurve(star_id):
         return {'success': False, 'error': 'All downloaded sectors had corrupted negative flux.'}
         
     lc = lk.LightCurveCollection(clean_lcs).stitch()
-    # Clean the data by removing outliers before flattening
-    lc = lc.remove_nans().remove_outliers(sigma_upper=4, sigma_lower=4)
     
-    # CRITIQUE 3: Detrending (Stellar Variability)
-    # We use a Savitzky-Golay filter (flatten), but we MUST use a wide window (401 points = ~13 hours)
-    # If we use the default 101, it will erase 4-hour transits entirely!
-    flattened_lc = lc.flatten(window_length=401)
+    # EXACT MATCH TO TRAINING: 
+    # No `remove_outliers` is applied here.
+    # We use a Savitzky-Golay filter with window_length=101 (Not 401).
+    flattened_lc = lc.flatten(window_length=101)
     
     # Dynamically calculate the maximum searchable period based on the observation baseline
     time_span = float(lc.time[-1].value - lc.time[0].value)
