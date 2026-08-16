@@ -10,7 +10,7 @@ In exoplanetary transit photometry, the most common astrophysical false positive
 Binary classifiers struggle here because an EB primary eclipse mathematically resembles a deep planetary transit. To resolve this, the architecture was upgraded to a 3-class Ternary model using `sparse_categorical_crossentropy` and `softmax` output.
 
 ## 2. XAI Ablation on TIC 185259483
-To mathematically prove the CNN learned the astrophysics of a binary system rather than memorizing random artifacts, we ran an Ablation Analysis on **TIC 185259483** (a confirmed ultra-short period EB).
+To evaluate whether the CNN learned the astrophysics of a binary system rather than memorizing random artifacts, we ran an Ablation Analysis on **TIC 185259483** (a confirmed ultra-short period EB).
 
 The original confidence that TIC 185259483 was an Eclipsing Binary was **99.03%**. We used our XAI suite to selectively mask (zero out) specific regions of the light curve to observe the drop in confidence.
 
@@ -52,13 +52,13 @@ The original confidence that TIC 185259483 was an Eclipsing Binary was **99.03%*
 
 ### 1. The Transit Masking Paradox (+0.54%)
 When the primary Transit Region was explicitly masked (deleted), the AI's confidence that the star was an Eclipsing Binary **increased by 0.54%**. 
-* **Conclusion:** This perfectly aligns with binary astrophysics. The primary eclipse is the only feature an EB shares with a planet. By deleting the primary eclipse, we removed the "planet-like" ambiguity, leaving behind pure secondary eclipses and ellipsoidal tidal variations. The AI correctly interpreted the remaining out-of-eclipse waveform as definitively binary in nature.
+* **Conclusion:** This aligns well with binary astrophysics. The primary eclipse is a feature an EB shares with a planet. By deleting the primary eclipse, we removed the "planet-like" ambiguity, leaving behind secondary eclipses and ellipsoidal tidal variations. The AI interpreted the remaining out-of-eclipse waveform as binary in nature.
 
 ### 2. Grad-CAM's Superior Spatial Awareness
 SHAP and Integrated Gradients (IG) primarily operate on pixel-level variance and heavily fixated on the deepest point of the light curve (the primary eclipse). Masking their highlighted regions caused the model's confidence to *increase*, proving they were highlighting the ambiguous "planet-like" feature.
 
 Conversely, **Grad-CAM (Conv1 and Conv3)** operates on feature maps that perceive macroscopic spatial structures. 
-* **Conclusion:** Grad-CAM correctly highlighted the out-of-transit wave structure (the ellipsoidal variations and secondary eclipse). When we masked Grad-CAM's highlighted regions, the EB confidence finally **dropped by 2.17%**. This proves conclusively that the CNN's convolutional layers have successfully learned the macroscopic gravitational physics of dual-star systems.
+* **Conclusion:** Grad-CAM highlighted the out-of-transit wave structure (the ellipsoidal variations and secondary eclipse). When we masked Grad-CAM's highlighted regions, the EB confidence **dropped by 2.17%**. This provides strong evidence that the CNN's convolutional layers have learned to identify the macroscopic gravitational physics of dual-star systems.
 
 ### 3. Background Noise Clarification (+0.91%)
 When random background segments were masked out, the EB confidence shot up to its absolute maximum peak of **99.94% (+0.91%)**.

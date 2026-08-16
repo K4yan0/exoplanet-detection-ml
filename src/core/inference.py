@@ -1,23 +1,25 @@
 import numpy as np
 
 def normalize_flux(flux):
-    """Applies Median Absolute Deviation (MAD) scaling and One-Sided Clipping."""
+    """Applies Z-Score Normalization (Mean & Std) to match train_model.py. No clipping."""
     X_raw = np.array([flux])
     X_raw = np.nan_to_num(X_raw, nan=1.0, posinf=1.0, neginf=1.0)
-    median = np.median(X_raw, axis=1, keepdims=True)
-    mad = np.median(np.abs(X_raw - median), axis=1, keepdims=True)
-    mad_scaled = mad * 1.4826
     
-    X_scaled = (X_raw - median) / (mad_scaled + 1e-8)
+    mean = np.mean(X_raw, axis=1, keepdims=True)
+    std = np.std(X_raw, axis=1, keepdims=True)
+    
+    X_scaled = (X_raw - mean) / (std + 1e-8)
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
     
-    # Clip positive flares
-    X_scaled = np.clip(X_scaled, a_min=None, a_max=3.0)
+    # Check if a massive flare is throwing off the Z-score (basic heuristic veto)
+    veto_triggered = bool(np.max(X_scaled) > 10.0)
     
-    num_clipped_points = int(np.sum(X_scaled == 3.0))
-    veto_triggered = bool(num_clipped_points > 50)
+    metadata = {
+        'mean': float(mean[0][0]),
+        'std': float(std[0][0])
+    }
     
-    return X_scaled, veto_triggered
+    return X_scaled, veto_triggered, metadata
 
 def predict_planet(model, X_scaled, n_iterations=50):
     """Runs the 1D CNN model using Monte Carlo Dropout for uncertainty estimation (Ternary Classifier)."""

@@ -38,21 +38,23 @@ def analyze_star(star_id):
     flux = astro_res['flux']
     
     # 2. Inference (Normalize & Veto Check)
-    X_scaled, veto_triggered = normalize_flux(flux)
+    X_scaled, veto_triggered, norm_metadata = normalize_flux(flux)
     
     if veto_triggered:
         prediction = [1.0, 0.0, 0.0]
         uncertainty = [0.0, 0.0, 0.0]
+        class_probs = np.array([1.0, 0.0, 0.0])
         upsampled_heatmap_conv1 = [0.0] * 2000
         upsampled_heatmap_conv3 = [0.0] * 2000
         heatmap_ig = [0.0] * 2000
         heatmap_shap = [0.0] * 2000
     else:
-        # 3. Predict (with MC Dropout Uncertainty) returns arrays of shape (3,)
-        prediction, uncertainty = predict_planet(model, X_scaled)
+        # 3. Predict (with MC Dropout Uncertainty)
+        prediction, uncertainty = predict_planet(model, X_scaled, n_iterations=50)
+        class_probs = np.array(prediction)
         
         # Target the most likely class for XAI explanation
-        target_class = int(np.argmax(prediction))
+        target_class = int(np.argmax(class_probs))
         
         # 4. XAI Consensus (Grad-CAM, IG, SHAP)
         upsampled_heatmap_conv1 = compute_gradcam(model, X_scaled, 'conv1d', target_class)
@@ -66,6 +68,7 @@ def analyze_star(star_id):
         'success': True,
         'prediction': prediction,
         'uncertainty': uncertainty,
+        'class_probs': class_probs.tolist(),
         'period': astro_res['period'],
         'duration_hours': astro_res['duration_hours'],
         'depth_ppt': astro_res['depth_ppt'],
@@ -75,7 +78,8 @@ def analyze_star(star_id):
         'heatmap_ig': heatmap_ig,
         'heatmap_shap': heatmap_shap,
         'star_id': star_id,
-        'veto': veto_triggered
+        'veto': veto_triggered,
+        'norm_metadata': norm_metadata
     }
 
 # --- ROUTES ---
@@ -116,6 +120,57 @@ def ablation():
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/technical')
+def technical():
+    return render_template('technical.html')
+
+@app.route('/api/full_report', methods=['POST'])
+def full_report():
+    data = request.get_json()
+    star_id = data.get('star_id', '')
+    res = analyze_star(star_id)
+    
+    if not res.get('success'):
+        return jsonify({'error': res.get('error')})
+        
+    if res.get('veto'):
+        res['ablation_matrix'] = {}
+        res['temperature'] = 1.0
+        return jsonify(res)
+        
+    # Read Calibration Data
+    temperature = 1.0
+    try:
+        import json
+        calib_path = os.path.join('data', 'models', 'calibration_params.json')
+        if os.path.exists(calib_path):
+            with open(calib_path, 'r') as f:
+                calib = json.load(f)
+                temperature = calib.get('temperature', 1.0)
+    except Exception as e:
+        pass
+    res['temperature'] = temperature
+
+    # Run Ablation on ALL 4 XAI Methods simultaneously
+    X_base = np.array(res['flux_data']).reshape((1, 2000, 1))
+    target_class = int(np.argmax(res['prediction']))
+    orig_pred = float(res['prediction'][target_class])
+    
+    heatmaps = {
+        'SHAP': res['heatmap_shap'],
+        'Integrated Gradients': res['heatmap_ig'],
+        'Grad-CAM (Conv1)': res['heatmap_conv1'],
+        'Grad-CAM (Conv3)': res['heatmap_conv3']
+    }
+    
+    ablation_matrix = {}
+    for name, hm in heatmaps.items():
+        if hm and len(hm) == 2000:
+            ablation_matrix[name] = run_ablation(model, X_base, hm, target_class, orig_pred)
+            
+    res['ablation_matrix'] = ablation_matrix
+    return jsonify(res)
 
 def process_batch(job_id, star_ids):
     BATCH_JOBS[job_id]['status'] = 'running'

@@ -43,7 +43,7 @@ When tested on **TOI-700 (TIC 150428135)**, a multi-planet system, the dynamic B
 
 **The Upgrade Path:**
 1. Prior to phase-folding, implement **Spline Detrending** or a **Savitzky-Golay filter**.
-2. This acts as a "High-Pass Filter", flattening out the slow, rolling stellar waves while perfectly preserving the sharp transit dips.
+2. This acts as a "High-Pass Filter", flattening out the slow, rolling stellar waves while largely preserving the sharp transit dips.
 
 ---
 
@@ -53,7 +53,7 @@ When tested on **TOI-700 (TIC 150428135)**, a multi-planet system, the dynamic B
 
 **Resolution & Empirical Proof (The TOI-1231 VETO):**
 This vulnerability was empirically tested by querying **TOI-1231 (TIC 447061717)** across 5 non-consecutive sectors. As predicted, the traditional BLS algorithm was tricked by a massive data gap and mistakenly output a **40.8093 Day** period artifact. 
-However, the Exoplanet AI pipeline did not blindly trust the BLS math. The 1D CNN inspected the phase-folded 40.8-day signal, recognized the physical morphology was a gap-induced mathematical anomaly rather than a U-shaped transit, and successfully **VETOED** the signal, flagging it as an artifact. This proves the absolute necessity of using AI as a Triage Engine to overrule mathematically flawed classical algorithms.
+However, the Exoplanet AI pipeline did not blindly trust the BLS math. The 1D CNN inspected the phase-folded 40.8-day signal, recognized the physical morphology was a gap-induced mathematical anomaly rather than a U-shaped transit, and successfully **VETOED** the signal, flagging it as an artifact. This demonstrates the potential utility of using AI as a Triage Engine to identify and overrule artifacts produced by classical algorithms.
 
 ---
 

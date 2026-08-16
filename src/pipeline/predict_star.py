@@ -61,23 +61,19 @@ def process_and_predict(star_id):
     X_raw = np.array([flux])
     X_raw = np.nan_to_num(X_raw, nan=1.0, posinf=1.0, neginf=1.0)
     
-    median = np.median(X_raw, axis=1, keepdims=True)
-    mad = np.median(np.abs(X_raw - median), axis=1, keepdims=True)
-    mad_scaled = mad * 1.4826
+    mean = np.mean(X_raw, axis=1, keepdims=True)
+    std = np.std(X_raw, axis=1, keepdims=True)
     
-    X_scaled = (X_raw - median) / (mad_scaled + 1e-8)
+    X_scaled = (X_raw - mean) / (std + 1e-8)
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
     
-    # One-Sided Clip: Cap positive flares at +3.0, leave bottom unclipped!
-    X_scaled = np.clip(X_scaled, a_min=None, a_max=3.0)
-    
     # 6. Predict & Veto
-    num_clipped_points = np.sum(X_scaled == 3.0)
+    num_extreme_outliers = np.sum(X_scaled > 10.0)
     
-    if num_clipped_points > 50:
+    if num_extreme_outliers > 50:
         print("\n" + "="*40)
         print("⚠️ VETO: STELLAR VARIABILITY ARTIFACT ⚠️")
-        print(f"Rejected: {num_clipped_points} data points hit the +3.0 ceiling.")
+        print(f"Rejected: {num_extreme_outliers} data points are extreme unclipped outliers (Z > 10.0).")
         print("The AI was bypassed to prevent a False Positive.")
         print("="*40 + "\n")
         prediction = 0.0
