@@ -1,0 +1,34 @@
+{
+    "timestamp": "2026-08-16T19:24:20.722488Z",
+    "contract": "EXP5_PIPELINE_V1",
+    "random_seed": 42,
+    "dataset": {
+        "path": "data/tess_ml_arrays/tess_dataset_ternary.npz",
+        "sha256_hash": "5a41c9a7b424fd122819a72bb18cc4240f25c234cb604e600bab41bffeb7190a",
+        "total_samples": 874,
+        "train_samples": 699,
+        "val_samples": 175,
+        "normalization": "z-score (per-sample)"
+    },
+    "model": {
+        "path": "data/models/exp5_reference_model.keras",
+        "sha256_hash": "c3f527ccf95e9a6b17aebb5913d6b3881a8b5762d522b777b0872c49198986c3",
+        "architecture": "1D CNN",
+        "loss": "sparse_categorical_crossentropy",
+        "optimizer": "adam",
+        "learning_rate": 0.001
+    },
+    "environment": {
+        "os": "Windows-11-10.0.26200-SP0",
+        "python_version": "3.12.10",
+        "tensorflow_version": "2.21.0",
+        "lightkurve_version": "2.6.0",
+        "numpy_version": "2.4.6",
+        "pandas_version": "2.3.3",
+        "scikit-learn_version": "1.9.0"
+    },
+    "performance": {
+        "val_accuracy": 0.7885714173316956,
+        "val_loss": 0.5212368965148926
+    }
+}
