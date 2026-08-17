@@ -3,9 +3,9 @@
 ![Project Status: Completed - High Accuracy](https://img.shields.io/badge/Status-Completed%20(90%25%20Accuracy)-brightgreen.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-This project documents a two-part investigation into exoplanet detection using Deep Learning. 
-Part 1 documents an exhaustive investigation and eventual failure caused by a corrupted Kaggle dataset.
-Part 2 documents the breakthrough success of abandoning the static dataset, building a custom pipeline that fetches live data from the NASA MAST archive, and training a 90% accurate Convolutional Neural Network (CNN) protected by heuristic engineering guardrails and deployed as a Flask Web Application featuring interactive Plotly visualization, Explainable AI (Grad-CAM), and Asynchronous Batch Processing.
+> **An end-to-end, uncertainty-aware exoplanet candidate-vetting pipeline from NASA TESS data combining astrophysical signal processing, deep learning, explainability, counterfactual ablation, and multi-class false-positive discrimination.**
+
+This project documents a two-part investigation into exoplanet detection. Part 1 documents an initial attempt and eventual failure caused by a corrupted Kaggle dataset. Part 2 documents the breakthrough success of abandoning the static dataset and building a live NASA MAST ingestion pipeline.
 
 ---
 
