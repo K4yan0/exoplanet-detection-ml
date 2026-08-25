@@ -1,0 +1,74 @@
+{
+    "experiment_name": "EXP7_5CNN_1IN",
+    "data_integrity": {
+        "test_cohort_size": 58,
+        "class_distribution": {
+            "noise": 29,
+            "planet": 13,
+            "eb": 16
+        }
+    },
+    "prediction": {
+        "accuracy": 0.5862068965517241,
+        "roc_auc_weighted_ovr": 0.7647471830587169,
+        "classification_report": {
+            "Noise (0)": {
+                "precision": 0.5609756097560976,
+                "recall": 0.7931034482758621,
+                "f1-score": 0.6571428571428571,
+                "support": 29.0
+            },
+            "Planet (1)": {
+                "precision": 1.0,
+                "recall": 0.23076923076923078,
+                "f1-score": 0.375,
+                "support": 13.0
+            },
+            "EB (2)": {
+                "precision": 0.5714285714285714,
+                "recall": 0.5,
+                "f1-score": 0.5333333333333333,
+                "support": 16.0
+            },
+            "accuracy": 0.5862068965517241,
+            "macro avg": {
+                "precision": 0.710801393728223,
+                "recall": 0.5079575596816976,
+                "f1-score": 0.5218253968253967,
+                "support": 58.0
+            },
+            "weighted avg": {
+                "precision": 0.6622612038928272,
+                "recall": 0.5862068965517241,
+                "f1-score": 0.5597495894909688,
+                "support": 58.0
+            }
+        },
+        "confusion_matrix": [
+            [
+                23,
+                0,
+                6
+            ],
+            [
+                10,
+                3,
+                0
+            ],
+            [
+                8,
+                0,
+                8
+            ]
+        ]
+    },
+    "calibration": {
+        "multiclass_brier_score": 0.5130365622616267,
+        "expected_calibration_error": 0.15908688204041846
+    },
+    "uncertainty": {
+        "mean_mc_variance_global": 0.01277161855250597,
+        "mean_mc_variance_correct": 0.011622318997979164,
+        "mean_mc_variance_incorrect": 0.014399789273738861
+    }
+}
