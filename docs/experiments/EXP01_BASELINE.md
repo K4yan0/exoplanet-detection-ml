@@ -25,6 +25,6 @@
 | **Accuracy** | - | - | **0.7771** | 175.0 |
 
 ## Artifacts
-![Confusion Matrix](assets/v2_baseline_cm.png)
+![Confusion Matrix](/docs/assets/v2_baseline_cm.png)
 
 *(Note: Advanced dynamic metrics like SNR and Transit Depth will be mapped incrementally in future experimental scripts. This establishes the numerical floor for Exps 1-5).*
