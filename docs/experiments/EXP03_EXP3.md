@@ -51,3 +51,6 @@ Future multi-sector research must address:
 * Variable sector counts and weighting
 * Whether mathematical stitching alters transit morphology
 * XAI behavior around artificial gap boundaries
+
+## Artifacts
+![Confusion Matrix](/docs/assets/v2_exp3_cm.png)

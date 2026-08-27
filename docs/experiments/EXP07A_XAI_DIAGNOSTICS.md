@@ -9,7 +9,7 @@ In **Experiment 7**, we discovered a fascinating behavioral shift: training a CN
 
 The most illuminating case study is **TIC 36724087**. 
 
-![Grad-CAM for TIC 36724087](C:/Users/Admin/.gemini/antigravity-cli/brain/afbd7ad9-01de-4c5e-9ab9-cc1d18c908a6/exp7a_tic36724087.png)
+![Grad-CAM for TIC 36724087](/docs/images/exp7a_tic36724087.png)
 
 > [!IMPORTANT]
 > **Top Panel (1-Sector Model):** The 1-sector representation contains a deeper, more compact transit. The model correctly predicts "Planet" (P=0.709) and the Grad-CAM heatmap perfectly highlights the central transit.

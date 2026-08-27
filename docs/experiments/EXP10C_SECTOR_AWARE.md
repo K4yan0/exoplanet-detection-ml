@@ -58,7 +58,7 @@ In the second run, the model failed to find a gradient path to separate the clas
 ## Attention Analysis (From Run 1)
 To understand how the `[CLS]` token is recovering these planets when it successfully optimizes, we extracted the attention map for one of the recovered targets (TIC 259377017_Positive). 
 
-![Exp 10C Attention](C:/Users/Admin/.gemini/antigravity-cli/brain/afbd7ad9-01de-4c5e-9ab9-cc1d18c908a6/EXP10C_attention_plot.png)
+![Exp 10C Attention](/docs/images/EXP10C_attention_plot.png)
 
 This visualization shows the attention scores from the `[CLS]` token to all 1250 sequence positions (250 bins x 5 sectors). It clearly demonstrates that the network has learned to allocate periodic spikes of attention at matching relative phase bins across all 5 sectors. 
 

@@ -65,7 +65,7 @@ Beyond accuracy, the MAD model showed lower discrimination, worse calibration, a
 
 The MAD model is not merely losing accuracy; it is associated with lower discrimination, worse probabilistic calibration, and approximately **2.18x greater MC-Dropout variance**.
 
-![Predictive Uncertainty: Z-Score vs MAD](/portfolio/images/mad_uncertainty_plot.png)
+![Predictive Uncertainty: Z-Score vs MAD](/docs/assets/mad_uncertainty_plot.png)
 *Caption: Mean predictive variance via MC-Dropout increases notably under MAD scaling.*
 
 ## 6. XAI Representation Analysis (Statistical Validation)
@@ -80,7 +80,7 @@ To ensure the statistical validity of this comparison, we normalized the maps an
 
 Under this Grad-CAM comparison, the attribution correlation for matched targets was not detectably greater than that expected under random pairing. There is no evidence that the two models' attribution maps become more similar merely because they are looking at the exact same physical planet.
 
-![Grad-CAM Comparison: Z-Score vs MAD](/portfolio/images/exp6_native_xai_comparison.png)
+![Grad-CAM Comparison: Z-Score vs MAD](/docs/assets/exp6_native_xai_comparison.png)
 
 ## 7. Conclusion
 We initially hypothesized that robust scaling would smoothly improve the pipeline by insulating it from outliers. By running the identical architecture natively on both scaling techniques, we rejected that hypothesis. 
@@ -89,3 +89,4 @@ These results provide strong evidence that the CNN's learned representation is m
 
 ---
 *Next up: Breaking the 1D phase-folding constraint to hunt for Transit Timing Variations (TTVs) using a hierarchical Global/Local CNN architecture.*
+![MAD vs Grad-CAM](/docs/assets/mad_gradcam_comparison.png)

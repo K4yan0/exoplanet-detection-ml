@@ -11,7 +11,7 @@ Both versions correctly identify the Planet.
 * **V1 (SG101) Probs:** Noise: 0.00 | Planet: 0.99 | EB: 0.00
 * **Exp1 (SG401) Probs:** Noise: 0.00 | Planet: 1.00 | EB: 0.00
 
-![Case 1 Planet Agreed](exp1a_xai_Case_1__Planet_Agreed.png)
+![Case 1 Planet Agreed](/docs/images/exp1a_xai_Case_1__Planet_Agreed.png)
 **Observation:** The attribution heatmaps are nearly identical. For strict, clean transits, SG401 does not shift the model's physical focus.
 
 ### Case 2: Planet Corrected (The Improvement)
@@ -19,7 +19,7 @@ SG101 was dangerously unconfident, while SG401 forcefully corrected it.
 * **V1 (SG101) Probs:** Noise: 0.99 | Planet: 0.00 | EB: 0.00
 * **Exp1 (SG401) Probs:** Noise: 0.16 | Planet: 0.84 | EB: 0.00
 
-![Case 2 Planet Corrected](exp1a_xai_Case_2__Planet_Corrected.png)
+![Case 2 Planet Corrected](/docs/images/exp1a_xai_Case_2__Planet_Corrected.png)
 **Observation:** Under SG101, the model attributed its "Noise" decision to out-of-transit fluctuations. Under SG401, those fluctuations are smoothed out by the rigid 401-point window, forcing the model's attention (especially Integrated Gradients) to snap back to the actual transit dip, successfully recovering the planet.
 
 ### Case 4: Noise Confused (The Calibration Deterioration)
@@ -27,7 +27,7 @@ SG101 correctly flagged Noise, but SG401 hallucinated an Eclipsing Binary.
 * **V1 (SG101) Probs:** Noise: 0.99 | Planet: 0.00 | EB: 0.00
 * **Exp1 (SG401) Probs:** Noise: 0.05 | Planet: 0.03 | EB: 0.92
 
-![Case 4 Noise Confused](exp1a_xai_Case_4__Noise_Confused.png)
+![Case 4 Noise Confused](/docs/images/exp1a_xai_Case_4__Noise_Confused.png)
 **Observation:** SG401's rigidity accidentally preserves long-period sinusoidal stellar variability (like starspots) that the 101-point window easily flattened. The CNN misinterprets this preserved sinusoidal wave as the continuous gravitational "O'Connell effect" seen in Eclipsing Binaries, causing a massive, highly-confident false positive. This explains the drastic worsening of the Expected Calibration Error (ECE).
 
 ---

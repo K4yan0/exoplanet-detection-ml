@@ -44,7 +44,7 @@ To further optimize this, we applied **Temperature Scaling** via a SciPy optimiz
 ## 5. Explainable AI & Counterfactual Ablation
 To evaluate whether the CNN relies on physical astrophysics rather than dataset artifacts, we established an **XAI Consensus** utilizing Grad-CAM, SHAP (Game Theory), and Integrated Gradients. 
 
-![XAI Consensus Heatmaps for Eclipsing Binary](docs/assets/xai_grid_tic185259483.png)
+![XAI Consensus Heatmaps for Eclipsing Binary](/docs/assets/xai_grid_tic185259483.png)
 
 We then performed an **Ablation Analysis**, systematically masking out physical regions of the phase-folded light curve to observe the drop (or increase) in the model's confidence.
 
