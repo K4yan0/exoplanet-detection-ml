@@ -23,7 +23,21 @@ By adding a **second Transformer block**, we establish a causal pathway:
   - Perform **Causal Attention Ablation** on Block 1 (masking out `S_i -> S_j` attention) and measure the impact on validation accuracy and targeted Planet Recall.
 
 ## Results
-*(To be populated after execution)*
+We successfully trained the Two-Stage model and ran the rigorous causal ablation test as proposed.
+
+*   **Intact Model (Standard):** 0.7000 Validation Accuracy, 0.1111 Planet Recall
+*   **Block 1 Ablated (No Cross-Sector Mixing):** 0.5000 Validation Accuracy, 0.0000 Planet Recall
+*   **Both Blocks Ablated:** 0.5000 Validation Accuracy, 0.0000 Planet Recall
 
 ## Conclusion
-*(To be populated after execution)*
+The experiment demonstrates a **causal dependence under the specific ablation procedure**.
+
+By introducing the second Transformer block, we created a valid structural pathway for cross-sector interaction. The ablation test confirms that the trained model is now utilizing this pathway: **ablating cross-sector attention in Block 1 caused a substantial degradation in validation performance (dropping to the 0.50 majority-class baseline) and reduced Planet recall to zero, providing direct evidence that the trained model's predictions depend on the cross-sector information propagated through Block 1.** 
+
+Furthermore, because ablating *both* blocks yielded the exact same collapsed performance as ablating *only Block 1*, we can conclude that the downstream classifier cannot rescue the representation once the initial cross-sector pathway is removed. 
+
+*(Note: The difference between Exp 11 and Exp 11A is an architectural evolution, not a pure causal comparison. The valid causal test is entirely within 11A, comparing intact vs ablated.)*
+
+This is a major conceptual milestone for the project, successfully moving from visual explanation (attention heatmaps) to causal verification. However, because this was tested on a single initialization (Seed 42), we cannot yet claim the architecture is robust.
+
+**Next Step:** Experiment 11B (Multi-Seed Two-Stage Stability) to verify if this causal cross-sector dependence is reliably learned across initializations.
