@@ -20,3 +20,8 @@ scipy
 statsmodels
 astropy
 tqdm
+lightkurve
+astroquery
+
+# --- Web & App ---
+flask

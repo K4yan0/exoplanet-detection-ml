@@ -147,6 +147,46 @@ The Explainable AI (XAI) suite revealed a fascinating behavior on Eclipsing Bina
    ```
    Open your browser and navigate to `http://127.0.0.1:5000`. Test it out with a known exoplanet like `TIC 261136679` (Pi Mensae) or `TIC 34068865` (WASP-126)!
 
+---
+
+## Reproducing Experiments & Benchmarks (Multi-Sector Research)
+
+The advanced research pipeline evaluates multi-sector exoplanet detection, uncertainty estimation (Monte Carlo Dropout), and causal attention mechanisms. Complete baselines and roadmaps are tracked in the [Research Status Hub](docs/RESEARCH_STATUS.md).
+
+### 1. Dataset Setup
+The multi-sector experiments rely on paired 5-sector light curves organized in `data/`:
+```text
+data/
+├── tess_positive_targets.json
+├── tess_eb_targets.json
+└── tess_ml_arrays/
+    └── tess_dataset_exp8.npz
+```
+* **Option A (Manual Copy - Recommended):** Copy the precompiled `data/` directory directly into your project root.
+* **Option B (Re-acquire from NASA MAST):** If acquiring from scratch, fetch the target catalogs and download the 5-sector cohort from NASA:
+  ```bash
+  python src/pipeline/fetch_targets.py
+  python src/pipeline/fetch_eb_targets.py
+  python src/pipeline/acquire_exp8_cohort.py
+  ```
+
+### 2. Benchmark Champion: EXP09C (Coarse Positional Bottleneck + LSTM)
+Train and evaluate the benchmark champion (84.0% accuracy, 0.77 precision, 0.91 recall, 0.0583 ECE):
+```bash
+python src/pipeline/train_exp9c.py
+python src/pipeline/evaluate_exp9c.py
+```
+*Documentation: [EXP09C Experiment Report](docs/experiments/EXP09C_COARSE_POSITION.md)*
+
+### 3. Two-Stage Cross-Sector Transformer & Causal Ablation: EXP11B
+Execute the standardized 5-seed evaluation (`[42, 100, 200, 300, 400]`) with 50-pass Monte Carlo Dropout and Block 1 causal ablation:
+```bash
+python src/pipeline/run_exp11b.py
+```
+* Generates full telemetry report at `docs/reports/EXP11B_multi_seed_evaluation.json`.
+* Measures classification metrics, calibration error (ECE), epistemic variance, and causal recall drop under attention ablation.
+*Documentation: [EXP11B Multi-Seed Report](docs/experiments/EXP11B_MULTI_SEED.md)*
+
 ## Attribution & Citation
 If you use this code, pipeline, or dataset methodology in your own research, portfolio, or web application, please credit this repository by linking back to it. 
 

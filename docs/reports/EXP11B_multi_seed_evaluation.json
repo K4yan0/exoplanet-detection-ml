@@ -1,0 +1,429 @@
+{
+    "seeds_evaluated": [
+        42,
+        100,
+        200,
+        300,
+        400
+    ],
+    "mean_accuracy": 0.584,
+    "std_accuracy": 0.055713553108736484,
+    "mean_planet_precision": 0.2115913715913716,
+    "std_planet_precision": 0.17569964688184025,
+    "mean_planet_recall": 0.41538461538461535,
+    "std_planet_recall": 0.4,
+    "mean_planet_f1": 0.27153846153846156,
+    "std_planet_f1": 0.23601223516574094,
+    "mean_ece": 0.11662555575370788,
+    "std_ece": 0.02924436888801498,
+    "mean_mc_variance": 0.0169898871332407,
+    "std_mc_variance": 0.005936761491579637,
+    "mean_causal_recall_drop": 0.07692307692307691,
+    "per_seed_results": [
+        {
+            "seed": 42,
+            "classification": {
+                "accuracy": 0.64,
+                "roc_auc_macro": 0.7958464966991284,
+                "planet_precision": 0.0,
+                "planet_recall": 0.0,
+                "planet_f1": 0.0,
+                "noise_recall": 0.92,
+                "eb_recall": 0.75,
+                "confusion_matrix": [
+                    [
+                        23,
+                        0,
+                        2
+                    ],
+                    [
+                        12,
+                        0,
+                        1
+                    ],
+                    [
+                        3,
+                        0,
+                        9
+                    ]
+                ]
+            },
+            "reliability": {
+                "ece": 0.09013933300971988,
+                "brier_score": 0.4760005361537536,
+                "mc_variance_global": 0.012148640118539333
+            },
+            "targeted_recovery": {
+                "recovered_count": 0,
+                "details": {
+                    "259377017": {
+                        "in_test_set": true,
+                        "predicted_class": 0,
+                        "p_planet": 0.4265085756778717,
+                        "mc_variance": 0.00854460895061493,
+                        "recovered": false
+                    },
+                    "36724087": {
+                        "in_test_set": false
+                    },
+                    "287328202": {
+                        "in_test_set": false
+                    },
+                    "345143460": {
+                        "in_test_set": false
+                    },
+                    "234994474": {
+                        "in_test_set": false
+                    },
+                    "150030205": {
+                        "in_test_set": false
+                    },
+                    "262530407": {
+                        "in_test_set": false
+                    },
+                    "181804752": {
+                        "in_test_set": false
+                    },
+                    "307809773": {
+                        "in_test_set": false
+                    },
+                    "254113311": {
+                        "in_test_set": false
+                    }
+                }
+            },
+            "causal_ablation": {
+                "ablated_accuracy": 0.64,
+                "ablated_planet_recall": 0.0,
+                "ablated_planet_f1": 0.0,
+                "accuracy_drop": 0.0,
+                "planet_recall_drop": 0.0,
+                "causal_pathway_functional": false
+            }
+        },
+        {
+            "seed": 100,
+            "classification": {
+                "accuracy": 0.58,
+                "roc_auc_macro": 0.7905444140496772,
+                "planet_precision": 0.3076923076923077,
+                "planet_recall": 0.3076923076923077,
+                "planet_f1": 0.3076923076923077,
+                "noise_recall": 0.6,
+                "eb_recall": 0.8333333333333334,
+                "confusion_matrix": [
+                    [
+                        15,
+                        8,
+                        2
+                    ],
+                    [
+                        7,
+                        4,
+                        2
+                    ],
+                    [
+                        1,
+                        1,
+                        10
+                    ]
+                ]
+            },
+            "reliability": {
+                "ece": 0.10552602827548979,
+                "brier_score": 0.4396296029194422,
+                "mc_variance_global": 0.016375960782170296
+            },
+            "targeted_recovery": {
+                "recovered_count": 0,
+                "details": {
+                    "259377017": {
+                        "in_test_set": true,
+                        "predicted_class": 0,
+                        "p_planet": 0.4479180872440338,
+                        "mc_variance": 0.016459254547953606,
+                        "recovered": false
+                    },
+                    "36724087": {
+                        "in_test_set": false
+                    },
+                    "287328202": {
+                        "in_test_set": false
+                    },
+                    "345143460": {
+                        "in_test_set": false
+                    },
+                    "234994474": {
+                        "in_test_set": false
+                    },
+                    "150030205": {
+                        "in_test_set": false
+                    },
+                    "262530407": {
+                        "in_test_set": false
+                    },
+                    "181804752": {
+                        "in_test_set": false
+                    },
+                    "307809773": {
+                        "in_test_set": false
+                    },
+                    "254113311": {
+                        "in_test_set": false
+                    }
+                }
+            },
+            "causal_ablation": {
+                "ablated_accuracy": 0.6,
+                "ablated_planet_recall": 0.7692307692307693,
+                "ablated_planet_f1": 0.5263157894736842,
+                "accuracy_drop": -0.020000000000000018,
+                "planet_recall_drop": -0.46153846153846156,
+                "causal_pathway_functional": false
+            }
+        },
+        {
+            "seed": 200,
+            "classification": {
+                "accuracy": 0.62,
+                "roc_auc_macro": 0.7146651931283511,
+                "planet_precision": 0.0,
+                "planet_recall": 0.0,
+                "planet_f1": 0.0,
+                "noise_recall": 0.84,
+                "eb_recall": 0.8333333333333334,
+                "confusion_matrix": [
+                    [
+                        21,
+                        1,
+                        3
+                    ],
+                    [
+                        11,
+                        0,
+                        2
+                    ],
+                    [
+                        2,
+                        0,
+                        10
+                    ]
+                ]
+            },
+            "reliability": {
+                "ece": 0.15798440575599668,
+                "brier_score": 0.5315372530994451,
+                "mc_variance_global": 0.028552310541272163
+            },
+            "targeted_recovery": {
+                "recovered_count": 0,
+                "details": {
+                    "259377017": {
+                        "in_test_set": true,
+                        "predicted_class": 0,
+                        "p_planet": 0.4095953106880188,
+                        "mc_variance": 0.021987468004226685,
+                        "recovered": false
+                    },
+                    "36724087": {
+                        "in_test_set": false
+                    },
+                    "287328202": {
+                        "in_test_set": false
+                    },
+                    "345143460": {
+                        "in_test_set": false
+                    },
+                    "234994474": {
+                        "in_test_set": false
+                    },
+                    "150030205": {
+                        "in_test_set": false
+                    },
+                    "262530407": {
+                        "in_test_set": false
+                    },
+                    "181804752": {
+                        "in_test_set": false
+                    },
+                    "307809773": {
+                        "in_test_set": false
+                    },
+                    "254113311": {
+                        "in_test_set": false
+                    }
+                }
+            },
+            "causal_ablation": {
+                "ablated_accuracy": 0.56,
+                "ablated_planet_recall": 0.0,
+                "ablated_planet_f1": 0.0,
+                "accuracy_drop": 0.05999999999999994,
+                "planet_recall_drop": 0.0,
+                "causal_pathway_functional": true
+            }
+        },
+        {
+            "seed": 300,
+            "classification": {
+                "accuracy": 0.6,
+                "roc_auc_macro": 0.806842093105251,
+                "planet_precision": 0.4074074074074074,
+                "planet_recall": 0.8461538461538461,
+                "planet_f1": 0.55,
+                "noise_recall": 0.36,
+                "eb_recall": 0.8333333333333334,
+                "confusion_matrix": [
+                    [
+                        9,
+                        14,
+                        2
+                    ],
+                    [
+                        1,
+                        11,
+                        1
+                    ],
+                    [
+                        0,
+                        2,
+                        10
+                    ]
+                ]
+            },
+            "reliability": {
+                "ece": 0.08529606580734256,
+                "brier_score": 0.4544397700210855,
+                "mc_variance_global": 0.013746235519647598
+            },
+            "targeted_recovery": {
+                "recovered_count": 1,
+                "details": {
+                    "259377017": {
+                        "in_test_set": true,
+                        "predicted_class": 1,
+                        "p_planet": 0.4837961792945862,
+                        "mc_variance": 0.010439866222441196,
+                        "recovered": true
+                    },
+                    "36724087": {
+                        "in_test_set": false
+                    },
+                    "287328202": {
+                        "in_test_set": false
+                    },
+                    "345143460": {
+                        "in_test_set": false
+                    },
+                    "234994474": {
+                        "in_test_set": false
+                    },
+                    "150030205": {
+                        "in_test_set": false
+                    },
+                    "262530407": {
+                        "in_test_set": false
+                    },
+                    "181804752": {
+                        "in_test_set": false
+                    },
+                    "307809773": {
+                        "in_test_set": false
+                    },
+                    "254113311": {
+                        "in_test_set": false
+                    }
+                }
+            },
+            "causal_ablation": {
+                "ablated_accuracy": 0.68,
+                "ablated_planet_recall": 0.15384615384615385,
+                "ablated_planet_f1": 0.25,
+                "accuracy_drop": -0.08000000000000007,
+                "planet_recall_drop": 0.6923076923076923,
+                "causal_pathway_functional": true
+            }
+        },
+        {
+            "seed": 400,
+            "classification": {
+                "accuracy": 0.48,
+                "roc_auc_macro": 0.7926584673742568,
+                "planet_precision": 0.34285714285714286,
+                "planet_recall": 0.9230769230769231,
+                "planet_f1": 0.5,
+                "noise_recall": 0.08,
+                "eb_recall": 0.8333333333333334,
+                "confusion_matrix": [
+                    [
+                        2,
+                        21,
+                        2
+                    ],
+                    [
+                        0,
+                        12,
+                        1
+                    ],
+                    [
+                        0,
+                        2,
+                        10
+                    ]
+                ]
+            },
+            "reliability": {
+                "ece": 0.1441819459199905,
+                "brier_score": 0.5095330704392732,
+                "mc_variance_global": 0.014126288704574108
+            },
+            "targeted_recovery": {
+                "recovered_count": 1,
+                "details": {
+                    "259377017": {
+                        "in_test_set": true,
+                        "predicted_class": 1,
+                        "p_planet": 0.5435931086540222,
+                        "mc_variance": 0.016552837565541267,
+                        "recovered": true
+                    },
+                    "36724087": {
+                        "in_test_set": false
+                    },
+                    "287328202": {
+                        "in_test_set": false
+                    },
+                    "345143460": {
+                        "in_test_set": false
+                    },
+                    "234994474": {
+                        "in_test_set": false
+                    },
+                    "150030205": {
+                        "in_test_set": false
+                    },
+                    "262530407": {
+                        "in_test_set": false
+                    },
+                    "181804752": {
+                        "in_test_set": false
+                    },
+                    "307809773": {
+                        "in_test_set": false
+                    },
+                    "254113311": {
+                        "in_test_set": false
+                    }
+                }
+            },
+            "causal_ablation": {
+                "ablated_accuracy": 0.4,
+                "ablated_planet_recall": 0.7692307692307693,
+                "ablated_planet_f1": 0.45454545454545453,
+                "accuracy_drop": 0.07999999999999996,
+                "planet_recall_drop": 0.15384615384615385,
+                "causal_pathway_functional": true
+            }
+        }
+    ]
+}
